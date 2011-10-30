@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World, ShaveDogMusicActivity!</string>
+    <string name="app_name">ShaveDogMusic</string>
+    <string name="shave_service_started">ShaveDogMusic Service running!</string>
+    
+</resources>
