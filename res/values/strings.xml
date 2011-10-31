@@ -3,5 +3,9 @@
     <string name="hello">Hello World, ShaveDogMusicActivity!</string>
     <string name="app_name">ShaveDogMusic</string>
     <string name="shave_service_started">ShaveDogMusic Service running!</string>
+    <string name="awesomeness">Awesomness to arrive</string>
+    <string name="shave_service_disconnected">ShaveMusic service disconnected..</string>
+    
+    
     
 </resources>
