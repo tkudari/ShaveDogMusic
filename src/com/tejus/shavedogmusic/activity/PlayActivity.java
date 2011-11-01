@@ -1,7 +1,6 @@
 package com.tejus.shavedogmusic.activity;
 
 import com.tejus.shavedogmusic.R;
-import com.tejus.shavedogmusic.R.layout;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -19,6 +18,9 @@ import android.content.ServiceConnection;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -53,6 +55,30 @@ public class PlayActivity extends Activity {
         mContext = this;
         initControls();
         initShaveServiceStuff();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu( Menu menu ) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate( R.menu.play_menu, menu );
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected( MenuItem item ) {
+        switch ( item.getItemId() ) {
+
+            case R.id.find_peers:
+                mShaveService.testPopulateList();
+                return true;
+
+            case R.id.set_creds:
+                startActivity( new Intent().setClass( mContext, CredentialsActivity.class ) );
+                return true;
+
+            default:
+                return super.onOptionsItemSelected( item );
+        }
     }
 
     private void initControls() {
@@ -123,6 +149,12 @@ public class PlayActivity extends Activity {
         public void onReceive( Context context, Intent intent ) {
             Logger.d( "broadcast intent received, username = " + intent.getStringExtra( "user_name" ) + ", address = " + intent.getStringExtra( "address" ) );
         }
+    }
+
+    @Override
+    protected void onStop() {
+        unbindService( mConnection );
+        super.onStop();
     }
 
 }

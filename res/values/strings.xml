@@ -5,6 +5,16 @@
     <string name="shave_service_started">ShaveDogMusic Service running!</string>
     <string name="awesomeness">Awesomness to arrive</string>
     <string name="shave_service_disconnected">ShaveMusic service disconnected..</string>
+    <string name="no_wifi">No Wi-fi!! Get your shit together!!</string>
+    <string name="find_peers">Find peers</string>
+    <string name="shave_service_stopped">ShaveMusic service stopped..</string>
+    <string name="set_creds">Set Credentials</string>
+    <string name="set">Set</string>
+    <string name="back">Back</string>
+    <string name="username">UserName: </string>
+    <string name="username_too_small">Minimum username length should be = </string>
+    
+    
     
     
     

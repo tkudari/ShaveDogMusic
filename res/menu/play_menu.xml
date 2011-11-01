@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<item android:id="@+id/find_peers" android:title="@string/find_peers" />
+	<item android:id="@+id/set_creds" android:title="@string/set_creds" />
+
+</menu>
