@@ -31,8 +31,6 @@ import android.widget.Toast;
 
 public class ShaveService extends Service {
 
-   
-
     private final IBinder mBinder = new ShaveBinder();
     private NotificationManager mNM;
     private int NOTIFICATION = R.string.shave_service_started;
@@ -41,6 +39,9 @@ public class ShaveService extends Service {
     DhcpInfo dhcp;
     ShaveFinder mFinder;
     static HashMap<String, String> peerMap = new HashMap<String, String>();
+    static HashMap<String, Integer> uploadPortMap = new HashMap<String, Integer>();
+    static HashMap<String, Integer> downloadPortMap = new HashMap<String, Integer>();
+    static ArrayList<Integer> alreadyAssignedPorts = new ArrayList<Integer>();
 
     public class ShaveBinder extends Binder {
         public ShaveService getService() {
@@ -52,23 +53,22 @@ public class ShaveService extends Service {
     public IBinder onBind( Intent arg0 ) {
         return mBinder;
     }
-    
+
     @Override
     public void onCreate() {
         Logger.d( "ShaveService created, biatch" );
-        Log.d("XXXX", "SDFSDFSDFSDF");
         mNM = ( NotificationManager ) getSystemService( NOTIFICATION_SERVICE );
         showNotification();
         setUpNetworkStuff();
         // setup our request broadcast server:
         new RequestListener().execute( mSearchSocket );
         // // this's our generic listener:
-        // new RequestListener().execute( mGenericSocket );
+        new RequestListener().execute( mGenericSocket );
     }
-    
+
     @Override
     public int onStartCommand( Intent intent, int flags, int startId ) {
-        Log.d( "XXXX", "ShaveService Received start id " + startId + ": " + intent );
+        Logger.d( "ShaveService Received start id " + startId + ": " + intent );
         return START_STICKY;
     }
 
@@ -93,12 +93,11 @@ public class ShaveService extends Service {
                     packet = new DatagramPacket( buffer, buffer.length );
                     Logger.d( "ShaveService.RequestListener listening on : " + requestSocket[ 0 ].getLocalPort() );
                     requestSocket[ 0 ].receive( packet );
-                    Log.d( "XXXX", "Stuff received by Server = " + new String( packet.getData() ) );
+                    Logger.d( "Stuff received by Server = " + new String( packet.getData() ) );
                     publishProgress( packet );
-                    Log.d( "XXXX", "done with publishProgress" );
 
                 } catch ( IOException e ) {
-                    Log.d( "XXXX", "Server: Receive timed out.." );
+                    Logger.d( "Server: Receive timed out.." );
                 }
             }
         }
@@ -185,7 +184,7 @@ public class ShaveService extends Service {
                     String searchString = Definitions.DISCOVER_PING + ":" + getOurUserName() + ":" + getOurIp().toString().replace( "/", "" )
                             + Definitions.END_DELIM;
 
-                    Log.d( "XXXX", "sending DISCOVER to = " + destinationAddress );
+                    Logger.d( "sending DISCOVER to = " + destinationAddress );
                     DatagramPacket sendPacket = new DatagramPacket( searchString.getBytes(), searchString.getBytes().length,
                             InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );
 
@@ -196,31 +195,26 @@ public class ShaveService extends Service {
             }
 
             // search other subnets under our parent's subnet:
-           /* for ( int j = 0; j < 256; j++ ) {
-                String parentAddress = parentSubnet + "." + String.valueOf( j );
-                for ( int i = 0; i < 256; i++ ) {
-                    try {
-                        if ( isCancelled() ) {
-                            break;
-                        }
-                        String destinationAddress = parentAddress + "." + String.valueOf( i );
-                        String searchString = Definitions.DISCOVER_PING + ":" + getOurUserName() + ":" + getOurIp().toString().replace( "/", "" )
-                                + Definitions.END_DELIM;
-
-                        Log.d( "XXXX", "sending DISCOVER to = " + destinationAddress );
-                        DatagramPacket sendPacket = new DatagramPacket( searchString.getBytes(), searchString.getBytes().length,
-                                InetAddress.getByName( destinationAddress ), Definitions.TEST_SERVER_PORT );
-
-                        mTestSocket.send( sendPacket );
-                    } catch ( Exception e ) {
-                        e.printStackTrace();
-                    }
-                }
-                if ( isCancelled() ) {
-                    Log.d( "XXXX", "TestSearchMethod: stopping search, since a friend replied.. " );
-                    break;
-                }
-            } */
+            /*
+             * for ( int j = 0; j < 256; j++ ) { String parentAddress =
+             * parentSubnet + "." + String.valueOf( j ); for ( int i = 0; i <
+             * 256; i++ ) { try { if ( isCancelled() ) { break; } String
+             * destinationAddress = parentAddress + "." + String.valueOf( i );
+             * String searchString = Definitions.DISCOVER_PING + ":" +
+             * getOurUserName() + ":" + getOurIp().toString().replace( "/", "" )
+             * + Definitions.END_DELIM;
+             * 
+             * Logger.d( "sending DISCOVER to = " + destinationAddress );
+             * DatagramPacket sendPacket = new DatagramPacket(
+             * searchString.getBytes(), searchString.getBytes().length,
+             * InetAddress.getByName( destinationAddress ),
+             * Definitions.TEST_SERVER_PORT );
+             * 
+             * mTestSocket.send( sendPacket ); } catch ( Exception e ) {
+             * e.printStackTrace(); } } if ( isCancelled() ) { Logger.d(
+             * "TestSearchMethod: stopping search, since a friend replied.. " );
+             * break; } }
+             */
 
             return null;
         }
@@ -260,7 +254,7 @@ public class ShaveService extends Service {
         if ( words[ 0 ].equals( Definitions.DISCOVER_PING ) ) {
             Logger.d( "DISCOVER_PING received...." );
             Logger.d( "cleanedup = " + cleanThisStringUp( words[ 2 ] ) );
-            if ( cleanThisStringUp( words[ 2 ] ).equals( cleanThisStringUp( Definitions.IP_ADDRESS_INETADDRESS.toString() ) ) ) {
+            if ( cleanThisStringUp( words[ 2 ] ).equals( cleanThisStringUp( Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
                 Logger.d( "yep, it's ours" );
             } else {
                 discoverPingReceived( new String[] {
@@ -280,12 +274,18 @@ public class ShaveService extends Service {
             } );
         }
 
+        if ( words[ 0 ].equals( Definitions.PLAY_REQUEST ) ) {
+            Logger.d( "PLAY_REQUEST received from : " + userName );
+
+        }
+
     }
 
     private void discoverAckReceived( String[] senderDetails ) {
         String userName = senderDetails[ 0 ];
         String senderAddress = senderDetails[ 1 ];
         peerMap.put( userName, senderAddress );
+        Logger.d( "ShaveService.discoverAckReceived: peerMap = " + peerMap.toString() );
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
         toast.show();
     }
@@ -294,10 +294,29 @@ public class ShaveService extends Service {
         // add the requester to our peer - list and reply back
         String userName = senderDetails[ 0 ];
         String senderAddress = senderDetails[ 1 ];
+        String uploadPort = getUnassignedPort();
+        uploadPortMap.put( userName, Integer.parseInt( uploadPort ) );
+        alreadyAssignedPorts.add( Integer.parseInt( uploadPort ) );
         peerMap.put( userName, senderAddress );
-        sendMessage( senderAddress, Definitions.DISCOVER_ACK );
+        Logger.d( "ShaveService.discoverPingReceived: peerMap = " + peerMap.toString() );
+        sendMessage( senderAddress, Definitions.DISCOVER_ACK + ":" + uploadPort );
+
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
         toast.show();
+    }
+
+    // return the last assigned port + '5' for now.
+    private String getUnassignedPort() {
+        String port;
+        if ( alreadyAssignedPorts.size() == 0 ) {
+            port = String.valueOf( Definitions.TRANSACTION_PORT_START );
+        } else {
+            port = String.valueOf( alreadyAssignedPorts.get( alreadyAssignedPorts.size() ) + 5 ) ;
+        }
+
+        Logger.d( "ShaveService.getUnassignedPort: returning = " + port );
+        return port;
+
     }
 
     String cleanThisStringUp( String string ) {
@@ -309,13 +328,12 @@ public class ShaveService extends Service {
         String sendMessage = message + ":" + getOurUserName() + ":" + getOurIp().toString().replace( "/", "" ) + Definitions.END_DELIM;
         byte[] testArr = sendMessage.getBytes();
 
-        Log.d( "XXXX", "sendMessage = " + sendMessage + ", len = " + sendMessage.length() );
-        Log.d( "XXXX", "testarr = " + testArr.toString() + ", len = " + testArr.length );
+        Logger.d( "sendMessage = " + sendMessage + ", len = " + sendMessage.length() );
+        Logger.d( "testarr = " + testArr.toString() + ", len = " + testArr.length );
         try {
-            Log.d( "XXXX", "destination address = " + InetAddress.getByName( destinationAddress ) );
+            Logger.d( "destination address = " + InetAddress.getByName( destinationAddress ) );
             DatagramPacket sendPacket = new DatagramPacket( sendMessage.getBytes(), sendMessage.getBytes().length, InetAddress.getByName( destinationAddress ),
                     Definitions.GENERIC_SERVER_PORT );
-            Log.d( "XXXX", "gonna send out the message:" );
             mGenericSocket.send( sendPacket );
         } catch ( Exception e ) {
             e.printStackTrace();
