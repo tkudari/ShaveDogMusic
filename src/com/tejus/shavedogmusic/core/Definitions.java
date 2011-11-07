@@ -43,6 +43,7 @@ public class Definitions {
     public static final String DISCOVER_ACK = "discover_ack";
     public static final Object PLAY_REQUEST = "play_request";
     public static final int TRANSACTION_PORT_START = 10000;
+    public static final boolean IS_IN_DEBUG_MODE = true;
 
     // Intent Names:
     public static String INTENT_QUERY_LIST = "com.tejus.shavedog.query_list";

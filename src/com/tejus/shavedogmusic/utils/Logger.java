@@ -1,5 +1,7 @@
 package com.tejus.shavedogmusic.utils;
 
+import com.tejus.shavedogmusic.core.Definitions;
+
 import android.util.Log;
 
 public class Logger {

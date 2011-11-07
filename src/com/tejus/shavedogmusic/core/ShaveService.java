@@ -44,6 +44,8 @@ public class ShaveService extends Service {
     public static ArrayList<Integer> alreadyAssignedPorts = new ArrayList<Integer>();
     public static HashMap<String, ArrayList<String>> peerMusicHistory = new HashMap<String, ArrayList<String>>();
 
+    LocalMusicManager localMusicManager = new LocalMusicManager();
+
     public class ShaveBinder extends Binder {
         public ShaveService getService() {
             return ShaveService.this;
@@ -278,6 +280,7 @@ public class ShaveService extends Service {
 
         if ( words[ 0 ].equals( Definitions.PLAY_REQUEST ) ) {
             Logger.d( "PLAY_REQUEST received from : " + userName );
+            playRequestReceived( userName, senderAddress );
 
         }
 
@@ -312,10 +315,17 @@ public class ShaveService extends Service {
     }
 
     private void playRequestReceived( String userName, String address ) {
-        String songPath = getRecommendedSong( userName );
-        long songSize = getFileSize( songPath );
-        Logger.d( "ShaveService.playRequestReceived: uploading song: " + songPath + ", to: " + userName );
-        uploadSong( userName, songPath, songSize );
+        String songPath;
+        try {
+            songPath = getRecommendedSong( userName );
+            long songSize = getFileSize( songPath );
+            Logger.d( "ShaveService.playRequestReceived: uploading song: " + songPath + ", to: " + userName );
+            uploadSong( userName, songPath, songSize );
+
+        } catch ( Exception e ) {
+            Toast.makeText( this, R.string.cannot_serve + userName, Toast.LENGTH_SHORT );
+            e.printStackTrace();
+        }
 
     }
 
@@ -336,16 +346,23 @@ public class ShaveService extends Service {
 
     }
 
-    private String getRecommendedSong( String userName ) {
-        // 'peerMusicHistory' is empty, since we're serving stuff up for the
-        // first time:
-        if ( peerMusicHistory.size() == 0 ) {
-            return localMusicList.get( 0 );
-        } else {
+    // TODO: improve exception handling.
+    private String getRecommendedSong( String userName ) throws Exception {
 
+        ArrayList<String> localMusicList = localMusicManager.getLatestLocalList();
+        // 'peerMusicHistory' for this userName is empty, since we're serving
+        // stuff up for the first time, return our first local song found:
+        if ( peerMusicHistory.get( userName ).size() == 0 ) {
+            if ( localMusicList.size() > 0 ) {
+                return localMusicList.get( 0 );
+            } else {
+                throw new Exception( "ShaveService.getRecommendedSong: Cannot read local Music listing!" );
+            }
+
+        } else { // We have served userName before.
+            return localMusicManager.requestSongForUser( userName, peerMusicHistory.get( userName ) );
         }
 
-        return null;
     }
 
     // return the last assigned port + '5' for now.

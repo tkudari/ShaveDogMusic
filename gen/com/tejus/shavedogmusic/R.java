@@ -38,6 +38,7 @@ public final class R {
         public static final int app_name=0x7f040001;
         public static final int awesomeness=0x7f040003;
         public static final int back=0x7f04000a;
+        public static final int cannot_serve=0x7f04000f;
         public static final int dump_maps=0x7f04000e;
         public static final int find_peers=0x7f040006;
         public static final int hello=0x7f040000;
