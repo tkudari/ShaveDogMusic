@@ -13,6 +13,8 @@
     <string name="back">Back</string>
     <string name="username">UserName: </string>
     <string name="username_too_small">Minimum username length should be = </string>
+    <string name="placeholder">Just a placeholder </string>
+    <string name="dump_maps">Dump maps to logs </string>
     
     
     

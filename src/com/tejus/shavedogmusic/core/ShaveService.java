@@ -1,5 +1,6 @@
 package com.tejus.shavedogmusic.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -26,7 +27,6 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
-import android.util.Log;
 import android.widget.Toast;
 
 public class ShaveService extends Service {
@@ -38,10 +38,11 @@ public class ShaveService extends Service {
     WifiManager wifi;
     DhcpInfo dhcp;
     ShaveFinder mFinder;
-    static HashMap<String, String> peerMap = new HashMap<String, String>();
-    static HashMap<String, Integer> uploadPortMap = new HashMap<String, Integer>();
-    static HashMap<String, Integer> downloadPortMap = new HashMap<String, Integer>();
-    static ArrayList<Integer> alreadyAssignedPorts = new ArrayList<Integer>();
+    public static HashMap<String, String> peerMap = new HashMap<String, String>();
+    public static HashMap<String, Integer> uploadPortMap = new HashMap<String, Integer>();
+    public static HashMap<String, Integer> downloadPortMap = new HashMap<String, Integer>();
+    public static ArrayList<Integer> alreadyAssignedPorts = new ArrayList<Integer>();
+    public static HashMap<String, ArrayList<String>> peerMusicHistory = new HashMap<String, ArrayList<String>>();
 
     public class ShaveBinder extends Binder {
         public ShaveService getService() {
@@ -258,8 +259,8 @@ public class ShaveService extends Service {
                 Logger.d( "yep, it's ours" );
             } else {
                 discoverPingReceived( new String[] {
-                    userName,
-                    cleanThisStringUp( senderAddress )
+                    words[ 1 ],
+                    cleanThisStringUp( words[ 2 ] )
                 } );
             }
         }
@@ -269,8 +270,9 @@ public class ShaveService extends Service {
             Logger.d( "cleanedup DISCOVER_ACK = " + cleanThisStringUp( words[ 2 ] ) );
 
             discoverAckReceived( new String[] {
-                userName,
-                cleanThisStringUp( senderAddress )
+                words[ 1 ],
+                cleanThisStringUp( words[ 2 ] ),
+                words[ 3 ]
             } );
         }
 
@@ -282,10 +284,14 @@ public class ShaveService extends Service {
     }
 
     private void discoverAckReceived( String[] senderDetails ) {
-        String userName = senderDetails[ 0 ];
-        String senderAddress = senderDetails[ 1 ];
+        String userName = senderDetails[ 1 ];
+        String senderAddress = senderDetails[ 2 ];
+        String downloadPort = senderDetails[ 0 ];
+        Logger.d( "words in discoverAckReceived = " + senderDetails[ 0 ] + ", " + senderDetails[ 1 ] + ", " + senderDetails[ 2 ] );
+
         peerMap.put( userName, senderAddress );
         Logger.d( "ShaveService.discoverAckReceived: peerMap = " + peerMap.toString() );
+        downloadPortMap.put( userName, Integer.parseInt( downloadPort ) );
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
         toast.show();
     }
@@ -305,13 +311,50 @@ public class ShaveService extends Service {
         toast.show();
     }
 
+    private void playRequestReceived( String userName, String address ) {
+        String songPath = getRecommendedSong( userName );
+        long songSize = getFileSize( songPath );
+        Logger.d( "ShaveService.playRequestReceived: uploading song: " + songPath + ", to: " + userName );
+        uploadSong( userName, songPath, songSize );
+
+    }
+
+    private void uploadSong( String userName, String songPath, long songSize ) {
+        int destinationPort = uploadPortMap.get( userName );
+        String destinationAddress = peerMap.get( userName );
+        new Uploader( destinationAddress, destinationPort, songPath, songSize ).execute( getApplicationContext() );
+
+    }
+
+    private long getFileSize( String songPath ) {
+        File tempFile = new File( songPath );
+        if ( tempFile.exists() ) {
+            return tempFile.length();
+        } else {
+            return -1;
+        }
+
+    }
+
+    private String getRecommendedSong( String userName ) {
+        // 'peerMusicHistory' is empty, since we're serving stuff up for the
+        // first time:
+        if ( peerMusicHistory.size() == 0 ) {
+            return localMusicList.get( 0 );
+        } else {
+
+        }
+
+        return null;
+    }
+
     // return the last assigned port + '5' for now.
     private String getUnassignedPort() {
         String port;
         if ( alreadyAssignedPorts.size() == 0 ) {
             port = String.valueOf( Definitions.TRANSACTION_PORT_START );
         } else {
-            port = String.valueOf( alreadyAssignedPorts.get( alreadyAssignedPorts.size() ) + 5 ) ;
+            port = String.valueOf( alreadyAssignedPorts.get( alreadyAssignedPorts.size() - 1 ) + 5 );
         }
 
         Logger.d( "ShaveService.getUnassignedPort: returning = " + port );

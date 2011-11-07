@@ -3,5 +3,6 @@
 
 	<item android:id="@+id/find_peers" android:title="@string/find_peers" />
 	<item android:id="@+id/set_creds" android:title="@string/set_creds" />
+	<item android:id="@+id/dump_maps" android:title="@string/dump_maps" />
 
 </menu>

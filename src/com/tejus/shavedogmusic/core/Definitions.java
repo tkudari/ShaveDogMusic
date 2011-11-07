@@ -1,6 +1,8 @@
 package com.tejus.shavedogmusic.core;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Definitions {
     public static int IP_ADDRESS_INT;
@@ -45,6 +47,13 @@ public class Definitions {
     // Intent Names:
     public static String INTENT_QUERY_LIST = "com.tejus.shavedog.query_list";
     public static String INTENT_FRIEND_ACCEPTED = "com.tejus.shavedog.friend_accepted";
+
+    // add more formats here:
+    public static ArrayList<String> MUSIC_TYPES = new ArrayList<String>() {
+        {
+            add( ".mp3" );
+        }
+    };
 
     //
 

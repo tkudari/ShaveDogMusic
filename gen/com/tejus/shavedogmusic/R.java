@@ -18,6 +18,7 @@ public final class R {
         public static final int back=0x7f060002;
         public static final int button_play=0x7f060006;
         public static final int button_stream=0x7f060004;
+        public static final int dump_maps=0x7f060009;
         public static final int find_peers=0x7f060007;
         public static final int progress_bar=0x7f060005;
         public static final int set=0x7f060001;
@@ -37,9 +38,11 @@ public final class R {
         public static final int app_name=0x7f040001;
         public static final int awesomeness=0x7f040003;
         public static final int back=0x7f04000a;
+        public static final int dump_maps=0x7f04000e;
         public static final int find_peers=0x7f040006;
         public static final int hello=0x7f040000;
         public static final int no_wifi=0x7f040005;
+        public static final int placeholder=0x7f04000d;
         public static final int set=0x7f040009;
         public static final int set_creds=0x7f040008;
         public static final int shave_service_disconnected=0x7f040004;

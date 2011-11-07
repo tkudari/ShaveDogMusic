@@ -75,10 +75,21 @@ public class PlayActivity extends Activity {
             case R.id.set_creds:
                 startActivity( new Intent().setClass( mContext, CredentialsActivity.class ) );
                 return true;
+                
+            case R.id.dump_maps:
+                dumpToLogs();
+                return true;
 
             default:
                 return super.onOptionsItemSelected( item );
         }
+    }
+
+    private void dumpToLogs() {
+        Logger.d( "PlayActivity.dumpToLogs: peerMap = " + ShaveService.peerMap.toString() );
+        Logger.d( "PlayActivity.dumpToLogs: downloadPortMap = " + ShaveService.downloadPortMap.toString() );
+        Logger.d( "PlayActivity.dumpToLogs: uploadPortMap = " + ShaveService.uploadPortMap.toString() );
+        Logger.d( "PlayActivity.dumpToLogs: alreadyAssignedPorts = " + ShaveService.alreadyAssignedPorts.toString() );
     }
 
     private void initControls() {
