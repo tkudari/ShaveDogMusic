@@ -7,8 +7,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
+
+import com.tejus.shavedogmusic.core.Definitions;
+import com.tejus.shavedogmusic.utils.Logger;
 
 import android.content.Context;
 import android.media.AudioManager;
@@ -28,13 +33,16 @@ import android.widget.TextView;
 
 public class ShaveMediaPlayer {
 
-    private static final int INTIAL_KB_BUFFER = 96 * 10 / 8;// assume  96kbps*10secs/8bits per byte
+    private static final int INTIAL_KB_BUFFER = 96 * 10 / 8;// assume
+                                                            // 96kbps*10secs/8bits
+                                                            // per byte
     private TextView textStreamed;
     private ImageButton playButton;
     private ProgressBar progressBar;
     // Track for display by progressBar
     private long mediaLengthInKb, mediaLengthInSeconds;
     private int totalKbRead = 0;
+    private ShaveService mShaveService;
 
     // Create Handler to call View updates on the main UI thread.
     private final Handler handler = new Handler();
@@ -43,28 +51,33 @@ public class ShaveMediaPlayer {
     private boolean isInterrupted;
     private Context context;
     private int counter = 0;
+    private String downloadAddress;
+    private int downloadPort;
 
-    public ShaveMediaPlayer( Context context, TextView textStreamed, ImageButton playButton, Button streamButton, ProgressBar progressBar ) {
+    public ShaveMediaPlayer( Context context, ShaveService serviceObject, TextView textStreamed, ImageButton playButton, Button streamButton,
+            ProgressBar progressBar ) {
         this.context = context;
         this.textStreamed = textStreamed;
         this.playButton = playButton;
         this.progressBar = progressBar;
+        this.mShaveService = serviceObject;
     }
 
     /**
      * Progressively download the media to a temporary location and update the
      * MediaPlayer as new content becomes available.
      */
-    public void startStreaming( final String mediaUrl, long mediaLengthInKb, long mediaLengthInSeconds ) throws IOException {
+    public void startStreaming( final String downloadAddress, final int downloadPort, final long mediaLengthInKb, long mediaLengthInSeconds ) throws IOException {
         this.mediaLengthInKb = mediaLengthInKb;
         this.mediaLengthInSeconds = mediaLengthInSeconds;
 
         Runnable r = new Runnable() {
             public void run() {
                 try {
-                    downloadAudioIncrement( mediaUrl );
+                    downloadAudioIncrement( downloadAddress, downloadPort, mediaLengthInKb );
                 } catch ( IOException e ) {
-                    Log.e( getClass().getName(), "Unable to initialize the MediaPlayer for fileUrl=" + mediaUrl, e );
+                    Logger.e( "Unable to initialize the MediaPlayer for peerAddress = " + downloadAddress );
+                    e.printStackTrace();
                     return;
                 }
             }
@@ -76,12 +89,30 @@ public class ShaveMediaPlayer {
      * Download the url stream to a temporary location and then call the
      * setDataSource for that local file
      */
-    public void downloadAudioIncrement( String mediaUrl ) throws IOException {
-        URLConnection cn = new URL( mediaUrl ).openConnection();
-        cn.connect();
+    public void downloadAudioIncrement( String destinationAddress, int downloadPort, long fileSize ) throws IOException {
+        // URLConnection cn = new URL( mediaUrl ).openConnection();
+        String message = Definitions.PLAY_REQUEST;
+        mShaveService.sendMessage( destinationAddress, message );
+
+        ServerSocket serverSocket;
+        Socket connection;
+        serverSocket = null;
+        try {
+            serverSocket = new ServerSocket( downloadPort );
+            while ( true ) {
+                Logger.d( "Downloader - gonna start waiting on accept()" );
+                connection = serverSocket.accept();
+                InputStream iStream = connection.getInputStream();
+                downloadingMediaFile = new File( context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".dat" );
+                FileOutputStream oStream = new FileOutputStream( downloadingMediaFile );
+            }
+
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
         InputStream stream = cn.getInputStream();
         if ( stream == null ) {
-            Log.e( getClass().getName(), "Unable to create InputStream for mediaUrl:" + mediaUrl );
+            Logger.e( "Unable to create InputStream for mediaUrl:" + mediaUrl );
         }
 
         downloadingMediaFile = new File( context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".dat" );
@@ -105,6 +136,52 @@ public class ShaveMediaPlayer {
         if ( validateNotInterrupted() ) {
             fireDataFullyLoaded();
         }
+    }
+
+    void socketDownloader( String address, int downloadPort, long fileSize ) {
+
+        ServerSocket serverSocket;
+        Socket connection;
+        serverSocket = null;
+        try {
+            serverSocket = new ServerSocket( downloadPort );
+            while ( true ) {
+                Logger.d( "Downloader - gonna start waiting on accept()" );
+                connection = serverSocket.accept();
+                InputStream iStream = connection.getInputStream();
+                FileOutputStream oStream = new FileOutputStream( new File( context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".dat" ) );
+                Logger.d( "Downloader - will start dloading to : " + context.getCacheDir().getName() + "downloadingMedia_" + ( counter ) + ".dat" );
+                byte[] readByte = new byte[ Definitions.DOWNLOAD_BUFFER_SIZE ];
+                int size, previousProgress = 0;
+                long count = 0;
+                while ( ( size = iStream.read( readByte ) ) > 0 ) {
+                    oStream.write( readByte, 0, size );
+                    count += ( long ) size;
+                    if ( fileSize > Definitions.DOWNLOAD_BUFFER_SIZE ) {
+                        int progress = ( int ) ( ( count * 100 ) / fileSize );
+                        if ( progress < 100 ) {
+                            Logger.d( "Downloader - download count = " + count + ", size here = " + size + ", progress = " + progress );
+                            if ( previousProgress != progress ) {
+                                previousProgress = progress;
+                            }
+
+                        }
+                    } else {
+                        Log.d( "XXXX", "Downloader - download count = " + count + ", progress = 100" );
+                    }
+                }
+
+                Logger.d( "Downloader - done dloading : " + filePath );
+                iStream.close();
+                oStream.close();
+                serverSocket.close();
+                return true;
+            }
+        } catch ( IOException e ) {
+            e.printStackTrace();
+            return false;
+        }
+
     }
 
     private boolean validateNotInterrupted() {
@@ -192,7 +269,7 @@ public class ShaveMediaPlayer {
             mediaPlayer.prepare();
             mediaPlayer.seekTo( curPosition );
 
-            // Restart if at end of prior beuffered content or mediaPlayer was
+            // Restart if at end of prior buffered content or mediaPlayer was
             // previously playing.
             // NOTE: We test for < 1second of data because the media player can
             // stop when there is still

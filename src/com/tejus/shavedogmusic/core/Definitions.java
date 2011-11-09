@@ -14,7 +14,7 @@ public class Definitions {
     public static final int DOWNLOAD_TRANSFER_PORT = 5585;
 
     public static final int COMMAND_BUFSIZE = 4000;
-    public static final int DOWNLOAD_BUFFER_SIZE = 32000;
+    public static final int DOWNLOAD_BUFFER_SIZE = 16384;
     public static String QUERY_LIST = "query_list";
     public static final String TAG = "XXXX";
     public static final boolean DASHWIRE = true;
@@ -41,7 +41,7 @@ public class Definitions {
     public static boolean ALLOW_COMPLEX_SEARCH = false;
 
     public static final String DISCOVER_ACK = "discover_ack";
-    public static final Object PLAY_REQUEST = "play_request";
+    public static final String PLAY_REQUEST = "play_request";
     public static final int TRANSACTION_PORT_START = 10000;
     public static final boolean IS_IN_DEBUG_MODE = true;
 

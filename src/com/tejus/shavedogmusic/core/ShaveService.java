@@ -38,11 +38,13 @@ public class ShaveService extends Service {
     WifiManager wifi;
     DhcpInfo dhcp;
     ShaveFinder mFinder;
+    public static ArrayList<String> peerList = new ArrayList<String>();
     public static HashMap<String, String> peerMap = new HashMap<String, String>();
-    public static HashMap<String, Integer> uploadPortMap = new HashMap<String, Integer>();
-    public static HashMap<String, Integer> downloadPortMap = new HashMap<String, Integer>();
+    private static HashMap<String, Integer> uploadPortMap = new HashMap<String, Integer>();
+    private static HashMap<String, Integer> downloadPortMap = new HashMap<String, Integer>();
     public static ArrayList<Integer> alreadyAssignedPorts = new ArrayList<Integer>();
     public static HashMap<String, ArrayList<String>> peerMusicHistory = new HashMap<String, ArrayList<String>>();
+    private static int peerIndex = 0;
 
     LocalMusicManager localMusicManager = new LocalMusicManager();
 
@@ -292,7 +294,7 @@ public class ShaveService extends Service {
         String downloadPort = senderDetails[ 0 ];
         Logger.d( "words in discoverAckReceived = " + senderDetails[ 0 ] + ", " + senderDetails[ 1 ] + ", " + senderDetails[ 2 ] );
 
-        peerMap.put( userName, senderAddress );
+        notePeer( userName, senderAddress );
         Logger.d( "ShaveService.discoverAckReceived: peerMap = " + peerMap.toString() );
         downloadPortMap.put( userName, Integer.parseInt( downloadPort ) );
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
@@ -306,7 +308,7 @@ public class ShaveService extends Service {
         String uploadPort = getUnassignedPort();
         uploadPortMap.put( userName, Integer.parseInt( uploadPort ) );
         alreadyAssignedPorts.add( Integer.parseInt( uploadPort ) );
-        peerMap.put( userName, senderAddress );
+        notePeer( userName, senderAddress );
         Logger.d( "ShaveService.discoverPingReceived: peerMap = " + peerMap.toString() );
         sendMessage( senderAddress, Definitions.DISCOVER_ACK + ":" + uploadPort );
 
@@ -399,6 +401,30 @@ public class ShaveService extends Service {
             e.printStackTrace();
         }
 
+    }
+
+    private void notePeer( String userName, String address ) {
+        if ( !peerList.contains( userName ) ) {
+            peerList.add( userName );
+        }
+        peerMap.put( userName, address );
+    }
+
+    public String getNextPeer() {        
+        return peerList.get( peerIndex++ );
+        
+    }
+
+    public int getDownloadPort( String userName ) {
+        return downloadPortMap.get( userName );
+    }
+    
+    public int getUploadPort( String userName ) {
+        return uploadPortMap.get( userName );
+    }
+    
+    public String getPeerAddress(String userName) {
+        return peerMap.get( userName );        
     }
 
 }
