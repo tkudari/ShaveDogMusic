@@ -280,6 +280,17 @@ public class ShaveService extends Service {
             } );
         }
 
+        if ( words[ 0 ].equals( Definitions.DISCOVER_ACK2 ) ) {
+            Logger.d( "DISCOVER_ACK2 received...." );
+            Logger.d( "cleanedup DISCOVER_ACK2 = " + cleanThisStringUp( words[ 2 ] ) );
+
+            discoverAck2Received( new String[] {
+                words[ 1 ],
+                cleanThisStringUp( words[ 2 ] ),
+                words[ 3 ]
+            } );
+        }
+
         if ( words[ 0 ].equals( Definitions.PLAY_REQUEST ) ) {
             Logger.d( "PLAY_REQUEST received from : " + userName );
             playRequestReceived( userName, senderAddress );
@@ -297,6 +308,29 @@ public class ShaveService extends Service {
         notePeer( userName, senderAddress );
         Logger.d( "ShaveService.discoverAckReceived: peerMap = " + peerMap.toString() );
         downloadPortMap.put( userName, Integer.parseInt( downloadPort ) );
+        alreadyAssignedPorts.add( Integer.parseInt( downloadPort ) );
+
+        // send out ACK2. This is to tell the peer about out uploadPort.
+        String uploadPort = getUnassignedPort();
+        uploadPortMap.put( userName, Integer.parseInt( uploadPort ) );
+        alreadyAssignedPorts.add( Integer.parseInt( uploadPort ) );
+        sendMessage( senderAddress, Definitions.DISCOVER_ACK2 + ":" + uploadPort );
+
+        Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
+        toast.show();
+    }
+
+    private void discoverAck2Received( String[] senderDetails ) {
+        String userName = senderDetails[ 1 ];
+        String senderAddress = senderDetails[ 2 ];
+        String downloadPort = senderDetails[ 0 ];
+        Logger.d( "words in discoverAck2Received = " + senderDetails[ 0 ] + ", " + senderDetails[ 1 ] + ", " + senderDetails[ 2 ] );
+
+        notePeer( userName, senderAddress );
+        Logger.d( "ShaveService.discoverAck2Received: peerMap = " + peerMap.toString() );
+        downloadPortMap.put( userName, Integer.parseInt( downloadPort ) );
+        alreadyAssignedPorts.add( Integer.parseInt( downloadPort ) );
+
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
         toast.show();
     }
@@ -354,15 +388,15 @@ public class ShaveService extends Service {
         ArrayList<String> localMusicList = localMusicManager.getLatestLocalList();
         // 'peerMusicHistory' for this userName is empty, since we're serving
         // stuff up for the first time, return our first local song found:
-        if ( peerMusicHistory.get( userName ).size() == 0 ) {
+        if ( peerMusicHistory.get( userName ) == null ) {
             if ( localMusicList.size() > 0 ) {
-                return localMusicList.get( 0 );
+                return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" + localMusicList.get( 0 );
             } else {
                 throw new Exception( "ShaveService.getRecommendedSong: Cannot read local Music listing!" );
             }
 
         } else { // We have served userName before.
-            return localMusicManager.requestSongForUser( userName, peerMusicHistory.get( userName ) );
+            return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" + localMusicManager.requestSongForUser( userName, peerMusicHistory.get( userName ) );
         }
 
     }
@@ -410,21 +444,25 @@ public class ShaveService extends Service {
         peerMap.put( userName, address );
     }
 
-    public String getNextPeer() {        
-        return peerList.get( peerIndex++ );
-        
+    public String getNextPeer() {
+        if ( peerIndex == peerList.size() - 1 ) {
+            return peerList.get( peerIndex );
+        } else {
+            return peerList.get( peerIndex++ );
+        }
+
     }
 
     public int getDownloadPort( String userName ) {
         return downloadPortMap.get( userName );
     }
-    
+
     public int getUploadPort( String userName ) {
         return uploadPortMap.get( userName );
     }
-    
-    public String getPeerAddress(String userName) {
-        return peerMap.get( userName );        
+
+    public String getPeerAddress( String userName ) {
+        return peerMap.get( userName );
     }
 
 }

@@ -3,6 +3,7 @@ package com.tejus.shavedogmusic.core;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import android.widget.TextView;
 
 public class ShaveMediaPlayer {
 
+    private String lname = "ShaveMediaPlayer";
     private static final int INTIAL_KB_BUFFER = 96 * 10 / 8;// assume
                                                             // 96kbps*10secs/8bits
                                                             // per byte
@@ -90,99 +92,101 @@ public class ShaveMediaPlayer {
      * setDataSource for that local file
      */
     public void downloadAudioIncrement( String destinationAddress, int downloadPort, long fileSize ) throws IOException {
-        // URLConnection cn = new URL( mediaUrl ).openConnection();
         String message = Definitions.PLAY_REQUEST;
+        // Ask the peer to start uploading:
         mShaveService.sendMessage( destinationAddress, message );
 
+        // Wait for the upload, download the song:
         ServerSocket serverSocket;
         Socket connection;
         serverSocket = null;
         try {
             serverSocket = new ServerSocket( downloadPort );
-            while ( true ) {
-                Logger.d( "Downloader - gonna start waiting on accept()" );
-                connection = serverSocket.accept();
-                InputStream iStream = connection.getInputStream();
-                downloadingMediaFile = new File( context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".dat" );
-                FileOutputStream oStream = new FileOutputStream( downloadingMediaFile );
+            Logger.d( "ShaveMediaPlayer.downloadAudioIncrement: waiting to hear back from - " + destinationAddress + ", at port: " + downloadPort );
+            connection = serverSocket.accept();
+            InputStream iStream = connection.getInputStream();
+            if ( iStream == null ) {
+                Logger.e( "Unable to create InputStream for peer at:" + destinationAddress );
+            }
+            downloadingMediaFile = new File( context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".mp3" );
+            FileOutputStream oStream = new FileOutputStream( downloadingMediaFile );
+            byte buf[] = new byte[ 16384 ];
+            int totalBytesRead = 0, incrementalBytesRead = 0;
+            do {
+                int numread = iStream.read( buf );
+                if ( numread <= 0 )
+                    break;
+                oStream.write( buf, 0, numread );
+                totalBytesRead += numread;
+                incrementalBytesRead += numread;
+                totalKbRead = totalBytesRead / 1000;
+
+                testMediaBuffer();
+                fireDataLoadUpdate();
+            } while ( validateNotInterrupted() );
+
+            iStream.close();
+            if ( validateNotInterrupted() ) {
+                fireDataFullyLoaded();
             }
 
         } catch ( IOException e ) {
             e.printStackTrace();
         }
-        InputStream stream = cn.getInputStream();
-        if ( stream == null ) {
-            Logger.e( "Unable to create InputStream for mediaUrl:" + mediaUrl );
-        }
-
-        downloadingMediaFile = new File( context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".dat" );
-        FileOutputStream out = new FileOutputStream( downloadingMediaFile );
-        byte buf[] = new byte[ 16384 ];
-        int totalBytesRead = 0, incrementalBytesRead = 0;
-        do {
-            int numread = stream.read( buf );
-            if ( numread <= 0 )
-                break;
-            out.write( buf, 0, numread );
-            totalBytesRead += numread;
-            incrementalBytesRead += numread;
-            totalKbRead = totalBytesRead / 1000;
-
-            testMediaBuffer();
-            fireDataLoadUpdate();
-        } while ( validateNotInterrupted() );
-
-        stream.close();
-        if ( validateNotInterrupted() ) {
-            fireDataFullyLoaded();
-        }
-    }
-
-    void socketDownloader( String address, int downloadPort, long fileSize ) {
-
-        ServerSocket serverSocket;
-        Socket connection;
-        serverSocket = null;
-        try {
-            serverSocket = new ServerSocket( downloadPort );
-            while ( true ) {
-                Logger.d( "Downloader - gonna start waiting on accept()" );
-                connection = serverSocket.accept();
-                InputStream iStream = connection.getInputStream();
-                FileOutputStream oStream = new FileOutputStream( new File( context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".dat" ) );
-                Logger.d( "Downloader - will start dloading to : " + context.getCacheDir().getName() + "downloadingMedia_" + ( counter ) + ".dat" );
-                byte[] readByte = new byte[ Definitions.DOWNLOAD_BUFFER_SIZE ];
-                int size, previousProgress = 0;
-                long count = 0;
-                while ( ( size = iStream.read( readByte ) ) > 0 ) {
-                    oStream.write( readByte, 0, size );
-                    count += ( long ) size;
-                    if ( fileSize > Definitions.DOWNLOAD_BUFFER_SIZE ) {
-                        int progress = ( int ) ( ( count * 100 ) / fileSize );
-                        if ( progress < 100 ) {
-                            Logger.d( "Downloader - download count = " + count + ", size here = " + size + ", progress = " + progress );
-                            if ( previousProgress != progress ) {
-                                previousProgress = progress;
-                            }
-
-                        }
-                    } else {
-                        Log.d( "XXXX", "Downloader - download count = " + count + ", progress = 100" );
-                    }
-                }
-
-                Logger.d( "Downloader - done dloading : " + filePath );
-                iStream.close();
-                oStream.close();
-                serverSocket.close();
-                return true;
-            }
-        } catch ( IOException e ) {
-            e.printStackTrace();
-            return false;
-        }
 
     }
+
+    // void socketDownloader( String address, int downloadPort, long fileSize )
+    // {
+    //
+    // ServerSocket serverSocket;
+    // Socket connection;
+    // serverSocket = null;
+    // try {
+    // serverSocket = new ServerSocket( downloadPort );
+    // while ( true ) {
+    // Logger.d( "Downloader - gonna start waiting on accept()" );
+    // connection = serverSocket.accept();
+    // InputStream iStream = connection.getInputStream();
+    // FileOutputStream oStream = new FileOutputStream( new File(
+    // context.getCacheDir(), "downloadingMedia_" + ( counter++ ) + ".dat" ) );
+    // Logger.d( "Downloader - will start dloading to : " +
+    // context.getCacheDir().getName() + "downloadingMedia_" + ( counter ) +
+    // ".dat" );
+    // byte[] readByte = new byte[ Definitions.DOWNLOAD_BUFFER_SIZE ];
+    // int size, previousProgress = 0;
+    // long count = 0;
+    // while ( ( size = iStream.read( readByte ) ) > 0 ) {
+    // oStream.write( readByte, 0, size );
+    // count += ( long ) size;
+    // if ( fileSize > Definitions.DOWNLOAD_BUFFER_SIZE ) {
+    // int progress = ( int ) ( ( count * 100 ) / fileSize );
+    // if ( progress < 100 ) {
+    // Logger.d( "Downloader - download count = " + count + ", size here = " +
+    // size + ", progress = " + progress );
+    // if ( previousProgress != progress ) {
+    // previousProgress = progress;
+    // }
+    //
+    // }
+    // } else {
+    // Log.d( "XXXX", "Downloader - download count = " + count +
+    // ", progress = 100" );
+    // }
+    // }
+    //
+    // Logger.d( "Downloader - done dloading : " + filePath );
+    // iStream.close();
+    // oStream.close();
+    // serverSocket.close();
+    // return true;
+    // }
+    // } catch ( IOException e ) {
+    // e.printStackTrace();
+    // return false;
+    // }
+    //
+    // }
 
     private boolean validateNotInterrupted() {
         if ( isInterrupted ) {
@@ -209,6 +213,7 @@ public class ShaveMediaPlayer {
                     // buffered data
                     if ( totalKbRead >= INTIAL_KB_BUFFER ) {
                         try {
+                            Logger.d( "testMediaBuffer: startingMediaPlayer" );
                             startMediaPlayer();
                         } catch ( Exception e ) {
                             Log.e( getClass().getName(), "Error copying buffered conent.", e );
@@ -220,7 +225,13 @@ public class ShaveMediaPlayer {
                     // We test for < 1second of data because the media player
                     // can stop when there is still
                     // a few milliseconds of data left to play
+                    Logger.d( " gonna transferBufferToMediaPlayer.." );
                     transferBufferToMediaPlayer();
+                }
+
+                if ( mediaPlayer != null ) {
+                    Logger.d( "testMediaBuffer : mediaPlayer.getDuration() = " + mediaPlayer.getDuration() + ", mediaPlayer.getCurrentPosition() = "
+                            + mediaPlayer.getCurrentPosition() );
                 }
             }
         };
@@ -229,14 +240,16 @@ public class ShaveMediaPlayer {
 
     private void startMediaPlayer() {
         try {
-            File bufferedFile = new File( context.getCacheDir(), "playingMedia" + ( counter++ ) + ".dat" );
+            File bufferedFile = new File( context.getCacheDir(), "playingMedia" + ( counter - 1 ) + ".mp3" );
             moveFile( downloadingMediaFile, bufferedFile );
 
             Log.e( "Player", bufferedFile.length() + "" );
             Log.e( "Player", bufferedFile.getAbsolutePath() );
-
             mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource( bufferedFile.getAbsolutePath() );
+            FileInputStream fIs = new FileInputStream( bufferedFile );
+            FileDescriptor fD = fIs.getFD();
+            mediaPlayer.setDataSource( fD );
+
             mediaPlayer.setAudioStreamType( AudioManager.STREAM_MUSIC );
             mediaPlayer.prepare();
             fireDataPreloadComplete();
@@ -258,13 +271,20 @@ public class ShaveMediaPlayer {
             // transferring data...e.g. perhaps the user pressed pause
             boolean wasPlaying = mediaPlayer.isPlaying();
             int curPosition = mediaPlayer.getCurrentPosition();
-            mediaPlayer.pause();
+            if ( !wasPlaying ) {
+                mediaPlayer.pause();
+            }
 
-            File bufferedFile = new File( context.getCacheDir(), "playingMedia" + ( counter++ ) + ".dat" );
+            downloadingMediaFile = new File( context.getCacheDir(), "downloadingMedia_" + ( counter - 1 ) + ".mp3" );
+            Logger.d( lname + ".transferBufferToMediaPlayer: downloadingMediaFile size here = " + downloadingMediaFile.length() );
+            File bufferedFile = new File( context.getCacheDir(), "playingMedia" + ( counter - 1 ) + ".mp3" );
+            moveFile( downloadingMediaFile, bufferedFile );
+
             // FileUtils.copyFile(downloadingMediaFile,bufferedFile);
-
+            FileInputStream fIs = new FileInputStream( bufferedFile );
+            FileDescriptor fD = fIs.getFD();
             mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource( bufferedFile.getAbsolutePath() );
+            mediaPlayer.setDataSource( fD );
             // mediaPlayer.setAudioStreamType(AudioSystem.STREAM_MUSIC);
             mediaPlayer.prepare();
             mediaPlayer.seekTo( curPosition );

@@ -41,6 +41,7 @@ public class Definitions {
     public static boolean ALLOW_COMPLEX_SEARCH = false;
 
     public static final String DISCOVER_ACK = "discover_ack";
+    public static final String DISCOVER_ACK2 = "discover_ack2";
     public static final String PLAY_REQUEST = "play_request";
     public static final int TRANSACTION_PORT_START = 10000;
     public static final boolean IS_IN_DEBUG_MODE = true;

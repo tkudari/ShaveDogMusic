@@ -5,6 +5,9 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+
+import com.tejus.shavedogmusic.utils.Logger;
 
 import android.os.AsyncTask;
 import android.os.Environment;
@@ -19,7 +22,7 @@ public class LocalMusicManager {
     // storing this value here, coz it could be usefiul for later
     long lastRefreshTime;
     public ArrayList<String> musicList = new ArrayList<String>();
-    String DEFAULT_MUSIC_DIRECTORY = Environment.DIRECTORY_MUSIC;
+    public String DEFAULT_MUSIC_DIRECTORY = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_MUSIC;
 
     public ArrayList<String> getLatestLocalList() {
 
@@ -40,7 +43,12 @@ public class LocalMusicManager {
         @Override
         protected Long doInBackground( Void... shaveADogNow ) {
             File listOfFiles = new File( DEFAULT_MUSIC_DIRECTORY );
-            musicList = ( ArrayList<String> ) Arrays.asList( listOfFiles.list( new SupportedExtensions() ) );
+            
+            List<String> songList = Arrays.asList( listOfFiles.list( new SupportedExtensions() ) );
+            for (String song : songList) {
+                Logger.d( "LocalMusicListUpdater: adding song = " + song );
+                musicList.add( song );
+            }
             return System.currentTimeMillis();
 
         }

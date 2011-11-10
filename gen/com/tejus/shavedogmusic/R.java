@@ -23,6 +23,7 @@ public final class R {
         public static final int progress_bar=0x7f060005;
         public static final int set=0x7f060001;
         public static final int set_creds=0x7f060008;
+        public static final int test_api=0x7f06000a;
         public static final int text_kb_streamed=0x7f060003;
         public static final int username=0x7f060000;
     }
@@ -49,6 +50,7 @@ public final class R {
         public static final int shave_service_disconnected=0x7f040004;
         public static final int shave_service_started=0x7f040002;
         public static final int shave_service_stopped=0x7f040007;
+        public static final int test_api=0x7f040010;
         public static final int username=0x7f04000b;
         public static final int username_too_small=0x7f04000c;
     }

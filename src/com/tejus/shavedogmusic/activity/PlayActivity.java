@@ -4,6 +4,7 @@ import com.tejus.shavedogmusic.R;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 
 import java.io.IOException;
@@ -76,6 +77,10 @@ public class PlayActivity extends Activity {
                 startActivity( new Intent().setClass( mContext, CredentialsActivity.class ) );
                 return true;
 
+            case R.id.test_api:
+                this.testApi();
+                return true;
+
                 // case R.id.dump_maps:
                 // dumpToLogs();
                 // return true;
@@ -95,6 +100,10 @@ public class PlayActivity extends Activity {
     // Logger.d( "PlayActivity.dumpToLogs: alreadyAssignedPorts = " +
     // ShaveService.alreadyAssignedPorts.toString() );
     // }
+
+    private void testApi() {
+        Logger.d( "testApi: Environment.DIRECTORY_MUSIC = " + Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_MUSIC );
+    }
 
     private void initControls() {
         textStreamed = ( TextView ) findViewById( R.id.text_kb_streamed );
@@ -131,7 +140,7 @@ public class PlayActivity extends Activity {
             if ( audioStreamer != null ) {
                 audioStreamer.interrupt();
             }
-            audioStreamer = new ShaveMediaPlayer( this, mShaveService,  textStreamed, playButton, streamButton, progressBar );
+            audioStreamer = new ShaveMediaPlayer( this, mShaveService, textStreamed, playButton, streamButton, progressBar );
             audioStreamer.startStreaming( downloadAddress, downloadPort, 1677, 214 );
             // streamButton.setEnabled(false);
         } catch ( IOException e ) {
