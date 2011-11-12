@@ -29,17 +29,18 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.tejus.shavedogmusic.core.Definitions;
 import com.tejus.shavedogmusic.core.ShaveMediaPlayer;
 import com.tejus.shavedogmusic.core.ShaveService;
 import com.tejus.shavedogmusic.utils.Logger;
 
 public class PlayActivity extends Activity {
 
-    private Button streamButton;
+    private Button streamButton, nextButton;
 
     private ImageButton playButton;
 
-    private TextView textStreamed;
+    private TextView textStreamed, songName;
 
     private boolean isPlaying;
 
@@ -55,6 +56,7 @@ public class PlayActivity extends Activity {
         setContentView( R.layout.play );
         mContext = this;
         initControls();
+        initReceiver();
         initShaveServiceStuff();
     }
 
@@ -85,6 +87,10 @@ public class PlayActivity extends Activity {
                 // dumpToLogs();
                 // return true;
 
+            case R.id.quit:
+                this.quit();
+                return true;
+
             default:
                 return super.onOptionsItemSelected( item );
         }
@@ -107,7 +113,14 @@ public class PlayActivity extends Activity {
 
     private void initControls() {
         textStreamed = ( TextView ) findViewById( R.id.text_kb_streamed );
+        songName = ( TextView ) findViewById( R.id.song_name );
         streamButton = ( Button ) findViewById( R.id.button_stream );
+        nextButton = ( Button ) findViewById( R.id.next );
+        nextButton.setOnClickListener( new View.OnClickListener() {
+            public void onClick( View view ) {
+                startStreamingAudio();
+            }
+        } );
         streamButton.setOnClickListener( new View.OnClickListener() {
             public void onClick( View view ) {
                 startStreamingAudio();
@@ -140,7 +153,7 @@ public class PlayActivity extends Activity {
             if ( audioStreamer != null ) {
                 audioStreamer.interrupt();
             }
-            audioStreamer = new ShaveMediaPlayer( this, mShaveService, textStreamed, playButton, streamButton, progressBar );
+            audioStreamer = new ShaveMediaPlayer( this, mShaveService, textStreamed, songName, playButton, streamButton, progressBar );
             audioStreamer.startStreaming( downloadAddress, downloadPort, 1677, 214 );
             // streamButton.setEnabled(false);
         } catch ( IOException e ) {
@@ -174,7 +187,13 @@ public class PlayActivity extends Activity {
     public class ServiceIntentReceiver extends BroadcastReceiver {
         @Override
         public void onReceive( Context context, Intent intent ) {
-            Logger.d( "broadcast intent received, username = " + intent.getStringExtra( "user_name" ) + ", address = " + intent.getStringExtra( "address" ) );
+            String userName = ( intent.getStringExtra( "user_name" ) != null ) ? intent.getStringExtra( "user_name" ) : null;
+            String songNameReceived = ( intent.getStringExtra( "song_name" ) != null ) ? intent.getStringExtra( "song_name" ) : null;
+            Logger.d( "broadcast intent received, songName = " + songNameReceived );
+            if ( songNameReceived != null && userName != null ) {
+                songName.setText( getResources().getString( R.string.now_playing ) + songNameReceived + ", from: " + userName );
+            }
+
         }
     }
 
@@ -182,6 +201,23 @@ public class PlayActivity extends Activity {
     protected void onStop() {
         unbindService( mConnection );
         super.onStop();
+    }
+
+    void quit() {
+        Logger.d( "quit(): Killing myself.." );
+        android.os.Process.killProcess( android.os.Process.myPid() );
+    }
+
+    void initReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction( Definitions.INTENT_SONG_PLAYING );
+        registerReceiver( mShaveReceiver, filter );
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver( mShaveReceiver );
     }
 
 }

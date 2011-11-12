@@ -16,7 +16,10 @@ import java.net.URLConnection;
 import com.tejus.shavedogmusic.core.Definitions;
 import com.tejus.shavedogmusic.utils.Logger;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -55,15 +58,19 @@ public class ShaveMediaPlayer {
     private int counter = 0;
     private String downloadAddress;
     private int downloadPort;
+    
 
-    public ShaveMediaPlayer( Context context, ShaveService serviceObject, TextView textStreamed, ImageButton playButton, Button streamButton,
-            ProgressBar progressBar ) {
+
+    public ShaveMediaPlayer( Context context, ShaveService serviceObject, TextView textStreamed, TextView songName, ImageButton playButton,
+            Button streamButton, ProgressBar progressBar ) {
         this.context = context;
         this.textStreamed = textStreamed;
         this.playButton = playButton;
         this.progressBar = progressBar;
         this.mShaveService = serviceObject;
     }
+    
+   
 
     /**
      * Progressively download the media to a temporary location and update the
@@ -72,6 +79,7 @@ public class ShaveMediaPlayer {
     public void startStreaming( final String downloadAddress, final int downloadPort, final long mediaLengthInKb, long mediaLengthInSeconds ) throws IOException {
         this.mediaLengthInKb = mediaLengthInKb;
         this.mediaLengthInSeconds = mediaLengthInSeconds;
+        Logger.d( "Song name in MPlayer = " + mShaveService.getSongName() );
 
         Runnable r = new Runnable() {
             public void run() {
@@ -231,7 +239,7 @@ public class ShaveMediaPlayer {
 
                 if ( mediaPlayer != null ) {
                     Logger.d( "testMediaBuffer : mediaPlayer.getDuration() = " + mediaPlayer.getDuration() + ", mediaPlayer.getCurrentPosition() = "
-                            + mediaPlayer.getCurrentPosition() );
+                            + mediaPlayer.getCurrentPosition() + "; is Playing? =  " + mediaPlayer.isPlaying() );
                 }
             }
         };
@@ -321,6 +329,7 @@ public class ShaveMediaPlayer {
     private void fireDataPreloadComplete() {
         Runnable updater = new Runnable() {
             public void run() {
+                Logger.d( "fireDataPreloadComplete: gonna start mediaPlayer.." );
                 mediaPlayer.start();
                 startPlayProgressUpdater();
                 playButton.setEnabled( true );
@@ -391,4 +400,6 @@ public class ShaveMediaPlayer {
             throw new IOException( "Old location does not exist when transferring " + oldLocation.getPath() + " to " + newLocation.getPath() );
         }
     }
+    
+   
 }
