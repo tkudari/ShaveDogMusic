@@ -18,12 +18,15 @@ public final class R {
         public static final int back=0x7f060002;
         public static final int button_play=0x7f060006;
         public static final int button_stream=0x7f060004;
-        public static final int dump_maps=0x7f060009;
-        public static final int find_peers=0x7f060007;
+        public static final int dump_maps=0x7f06000b;
+        public static final int find_peers=0x7f060009;
+        public static final int next=0x7f060007;
         public static final int progress_bar=0x7f060005;
+        public static final int quit=0x7f06000d;
         public static final int set=0x7f060001;
-        public static final int set_creds=0x7f060008;
-        public static final int test_api=0x7f06000a;
+        public static final int set_creds=0x7f06000a;
+        public static final int song_name=0x7f060008;
+        public static final int test_api=0x7f06000c;
         public static final int text_kb_streamed=0x7f060003;
         public static final int username=0x7f060000;
     }
@@ -43,13 +46,17 @@ public final class R {
         public static final int dump_maps=0x7f04000e;
         public static final int find_peers=0x7f040006;
         public static final int hello=0x7f040000;
+        public static final int next=0x7f040014;
         public static final int no_wifi=0x7f040005;
+        public static final int now_playing=0x7f040013;
         public static final int placeholder=0x7f04000d;
+        public static final int quit=0x7f040011;
         public static final int set=0x7f040009;
         public static final int set_creds=0x7f040008;
         public static final int shave_service_disconnected=0x7f040004;
         public static final int shave_service_started=0x7f040002;
         public static final int shave_service_stopped=0x7f040007;
+        public static final int song_name=0x7f040012;
         public static final int test_api=0x7f040010;
         public static final int username=0x7f04000b;
         public static final int username_too_small=0x7f04000c;

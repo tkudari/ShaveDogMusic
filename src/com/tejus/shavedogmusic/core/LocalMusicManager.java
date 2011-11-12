@@ -43,9 +43,9 @@ public class LocalMusicManager {
         @Override
         protected Long doInBackground( Void... shaveADogNow ) {
             File listOfFiles = new File( DEFAULT_MUSIC_DIRECTORY );
-            
+
             List<String> songList = Arrays.asList( listOfFiles.list( new SupportedExtensions() ) );
-            for (String song : songList) {
+            for ( String song : songList ) {
                 Logger.d( "LocalMusicListUpdater: adding song = " + song );
                 musicList.add( song );
             }
@@ -85,6 +85,7 @@ public class LocalMusicManager {
             String localItem = iterator.next().toString();
             // return the first song not in userName's history:
             if ( !history.contains( localItem ) ) {
+                Logger.d( "LocalMusicManager.requestSongForUser returning: " + localItem );
                 return localItem;
             }
         }

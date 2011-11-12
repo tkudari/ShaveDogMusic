@@ -7,6 +7,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
@@ -27,6 +28,7 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 import android.widget.Toast;
 
 public class ShaveService extends Service {
@@ -45,6 +47,7 @@ public class ShaveService extends Service {
     public static ArrayList<Integer> alreadyAssignedPorts = new ArrayList<Integer>();
     public static HashMap<String, ArrayList<String>> peerMusicHistory = new HashMap<String, ArrayList<String>>();
     private static int peerIndex = 0;
+    private static String songName;
 
     LocalMusicManager localMusicManager = new LocalMusicManager();
 
@@ -174,10 +177,12 @@ public class ShaveService extends Service {
             dealWithReceivedPacket( packet[ 0 ] );
         }
 
+        @SuppressWarnings( "unused" )
         @Override
         protected Void doInBackground( Void... shavealicious ) {
             String ourIp = getOurIp().getHostAddress();
             String subnet = ( String ) ourIp.subSequence( 0, ourIp.lastIndexOf( "." ) );
+            String subnetId = ( String ) subnet.subSequence( subnet.lastIndexOf( "." ) + 1, subnet.length() );
             String parentSubnet = ( String ) ourIp.subSequence( 0, subnet.lastIndexOf( "." ) );
             // search our subnet first:
             for ( int i = 0; i < 256; i++ ) {
@@ -200,26 +205,34 @@ public class ShaveService extends Service {
             }
 
             // search other subnets under our parent's subnet:
-            /*
-             * for ( int j = 0; j < 256; j++ ) { String parentAddress =
-             * parentSubnet + "." + String.valueOf( j ); for ( int i = 0; i <
-             * 256; i++ ) { try { if ( isCancelled() ) { break; } String
-             * destinationAddress = parentAddress + "." + String.valueOf( i );
-             * String searchString = Definitions.DISCOVER_PING + ":" +
-             * getOurUserName() + ":" + getOurIp().toString().replace( "/", "" )
-             * + Definitions.END_DELIM;
-             * 
-             * Logger.d( "sending DISCOVER to = " + destinationAddress );
-             * DatagramPacket sendPacket = new DatagramPacket(
-             * searchString.getBytes(), searchString.getBytes().length,
-             * InetAddress.getByName( destinationAddress ),
-             * Definitions.TEST_SERVER_PORT );
-             * 
-             * mTestSocket.send( sendPacket ); } catch ( Exception e ) {
-             * e.printStackTrace(); } } if ( isCancelled() ) { Logger.d(
-             * "TestSearchMethod: stopping search, since a friend replied.. " );
-             * break; } }
-             */
+
+            for ( int j = 0; j < 256; j++ ) {
+                if ( j == ( Integer.parseInt( subnetId ) - 1 ) || j == ( Integer.parseInt( subnetId ) + 1 ) ) {
+                    String parentAddress = parentSubnet + "." + String.valueOf( j );
+                    for ( int i = 0; i < 256; i++ ) {
+                        try {
+                            if ( isCancelled() ) {
+                                break;
+                            }
+                            String destinationAddress = parentAddress + "." + String.valueOf( i );
+                            String searchString = Definitions.DISCOVER_PING + ":" + getOurUserName() + ":" + getOurIp().toString().replace( "/", "" )
+                                    + Definitions.END_DELIM;
+
+                            Logger.d( "sending DISCOVER to = " + destinationAddress );
+                            DatagramPacket sendPacket = new DatagramPacket( searchString.getBytes(), searchString.getBytes().length,
+                                    InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );
+
+                            mTestSocket.send( sendPacket );
+                        } catch ( Exception e ) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                if ( isCancelled() ) {
+                    Logger.d( "TestSearchMethod: stopping search, since a friend replied.. " );
+                    break;
+                }
+            }
 
             return null;
         }
@@ -297,6 +310,19 @@ public class ShaveService extends Service {
 
         }
 
+        if ( words[ 0 ].equals( Definitions.PLAY_ACK ) ) {
+            Logger.d( "PLAY_ACK received from : " + words[ 2 ] + "; songName = " + words[ 1 ] );
+            playAckReceived( words[ 2 ], words[ 1 ] );
+        }
+
+    }
+
+    private void playAckReceived( String userName, String songName ) {
+        Intent intent = new Intent( Definitions.INTENT_SONG_PLAYING );
+        Logger.d( "playAckReceived : sending broadcast.." );
+        intent.putExtra( "user_name", userName );
+        intent.putExtra( "song_name", songName );
+        this.sendBroadcast( intent );
     }
 
     private void discoverAckReceived( String[] senderDetails ) {
@@ -356,6 +382,8 @@ public class ShaveService extends Service {
             songPath = getRecommendedSong( userName );
             long songSize = getFileSize( songPath );
             Logger.d( "ShaveService.playRequestReceived: uploading song: " + songPath + ", to: " + userName );
+            // send the file name in a separate message:
+            sendMessage( getPeerAddress( userName ), Definitions.PLAY_ACK + ":" + getFileNameTrivial( songPath ) );
             uploadSong( userName, songPath, songSize );
 
         } catch ( Exception e ) {
@@ -390,6 +418,8 @@ public class ShaveService extends Service {
         // stuff up for the first time, return our first local song found:
         if ( peerMusicHistory.get( userName ) == null ) {
             if ( localMusicList.size() > 0 ) {
+                // create a new 'history' for userName:
+                peerMusicHistory.put( userName, new ArrayList<String>( Arrays.asList( localMusicList.get( 0 ) ) ) );
                 return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" + localMusicList.get( 0 );
             } else {
                 throw new Exception( "ShaveService.getRecommendedSong: Cannot read local Music listing!" );
@@ -465,4 +495,11 @@ public class ShaveService extends Service {
         return peerMap.get( userName );
     }
 
+    public String getFileNameTrivial( String filePath ) {
+        return filePath.substring( filePath.lastIndexOf( "/" ) + 1 );
+    }
+
+    public String getSongName() {
+        return songName;
+    }
 }
