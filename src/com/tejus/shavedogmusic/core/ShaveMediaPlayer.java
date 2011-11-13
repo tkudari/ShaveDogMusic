@@ -58,6 +58,7 @@ public class ShaveMediaPlayer {
     private int counter = 0;
     private String downloadAddress;
     private int downloadPort;
+    private ServerSocket serverSocket;
     
 
 
@@ -105,7 +106,7 @@ public class ShaveMediaPlayer {
         mShaveService.sendMessage( destinationAddress, message );
 
         // Wait for the upload, download the song:
-        ServerSocket serverSocket;
+        
         Socket connection;
         serverSocket = null;
         try {
@@ -398,6 +399,14 @@ public class ShaveMediaPlayer {
             }
         } else {
             throw new IOException( "Old location does not exist when transferring " + oldLocation.getPath() + " to " + newLocation.getPath() );
+        }
+    }
+    
+    public void closePreviousDownloadSocket() {
+        try {
+            serverSocket.close();
+        } catch ( IOException e ) {
+            e.printStackTrace();
         }
     }
     

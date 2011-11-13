@@ -118,12 +118,16 @@ public class PlayActivity extends Activity {
         nextButton = ( Button ) findViewById( R.id.next );
         nextButton.setOnClickListener( new View.OnClickListener() {
             public void onClick( View view ) {
+                audioStreamer.closePreviousDownloadSocket();
+                // need to do this since we're using one download port per peer:
                 startStreamingAudio();
             }
         } );
         streamButton.setOnClickListener( new View.OnClickListener() {
             public void onClick( View view ) {
                 startStreamingAudio();
+                streamButton.setVisibility( View.GONE );
+                nextButton.setVisibility( View.VISIBLE );
             }
         } );
 

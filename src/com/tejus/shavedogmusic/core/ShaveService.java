@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,11 +28,14 @@ import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
 public class ShaveService extends Service {
+
+    private final Handler handler = new Handler();
 
     private final IBinder mBinder = new ShaveBinder();
     private NotificationManager mNM;
@@ -48,6 +52,8 @@ public class ShaveService extends Service {
     public static HashMap<String, ArrayList<String>> peerMusicHistory = new HashMap<String, ArrayList<String>>();
     private static int peerIndex = 0;
     private static String songName;
+    // each peer is assigned exactly ONE uploader:
+    private static HashMap<String, Uploader> peerUploaderMap = new HashMap<String, Uploader>();
 
     LocalMusicManager localMusicManager = new LocalMusicManager();
 
@@ -172,6 +178,12 @@ public class ShaveService extends Service {
 
     // Searches our subnet & our parent - subnet
     private class ShaveFinder extends AsyncTask<Void, DatagramPacket, Void> {
+        Handler handler;
+
+        public ShaveFinder( Handler handler ) {
+            this.handler = handler;
+        }
+
         @Override
         protected void onProgressUpdate( DatagramPacket... packet ) {
             dealWithReceivedPacket( packet[ 0 ] );
@@ -199,6 +211,14 @@ public class ShaveService extends Service {
                             InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );
 
                     mTestSocket.send( sendPacket );
+                } catch ( SocketException e ) {
+                    Runnable updater = new Runnable() {
+                        public void run() {
+                            Toast.makeText( getApplicationContext(), getResources().getString( R.string.no_wifi ), Toast.LENGTH_SHORT );
+                        }
+
+                    };
+                    this.handler.post( updater );
                 } catch ( Exception e ) {
                     e.printStackTrace();
                 }
@@ -223,7 +243,17 @@ public class ShaveService extends Service {
                                     InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );
 
                             mTestSocket.send( sendPacket );
-                        } catch ( Exception e ) {
+                        } catch ( SocketException e ) {
+                            Runnable updater = new Runnable() {
+                                public void run() {
+                                    Toast.makeText( getApplicationContext(), getResources().getString( R.string.no_wifi ), Toast.LENGTH_SHORT );
+                                }
+
+                            };
+                            this.handler.post( updater );
+                        }
+
+                        catch ( Exception e ) {
                             e.printStackTrace();
                         }
                     }
@@ -244,7 +274,7 @@ public class ShaveService extends Service {
     }
 
     public void testPopulateList() {
-        mFinder = new ShaveFinder();
+        mFinder = new ShaveFinder( handler );
         mFinder.execute();
     }
 
@@ -396,8 +426,16 @@ public class ShaveService extends Service {
     private void uploadSong( String userName, String songPath, long songSize ) {
         int destinationPort = uploadPortMap.get( userName );
         String destinationAddress = peerMap.get( userName );
-        new Uploader( destinationAddress, destinationPort, songPath, songSize ).execute( getApplicationContext() );
 
+        Uploader songUploader = new Uploader( destinationAddress, destinationPort, songPath, songSize );
+        // Cancel previous uploader for this peer, if any & make note of the new
+        // uploader:
+        Uploader previousUploader = peerUploaderMap.get( userName );
+        if ( previousUploader != null ) {
+            previousUploader.cancel( true );
+        }
+        peerUploaderMap.put( userName, songUploader );
+        songUploader.execute( getApplicationContext() );
     }
 
     private long getFileSize( String songPath ) {
@@ -502,4 +540,5 @@ public class ShaveService extends Service {
     public String getSongName() {
         return songName;
     }
+
 }

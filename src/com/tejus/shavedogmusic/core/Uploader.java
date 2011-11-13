@@ -18,7 +18,7 @@ public class Uploader extends AsyncTask<Context, Integer, Boolean> {
 
     public Uploader( String destinationAddress, int destinationPort, String filePath, long fileSize ) {
         this.filePath = filePath;
-        this.destinationAddress = destinationAddress;        
+        this.destinationAddress = destinationAddress;
         this.destinationPort = destinationPort;
         this.fileSize = fileSize;
         Logger.d( "Uploader: destination address = " + destinationAddress + ", destination port = " + destinationPort );
@@ -43,6 +43,9 @@ public class Uploader extends AsyncTask<Context, Integer, Boolean> {
             int size;
             long count = 0;
             while ( ( size = iStream.read( readArray ) ) > 0 ) {
+                if ( isCancelled() ) {
+                    break;
+                }
                 oStream.write( readArray, 0, size );
                 ++count;
                 if ( fileSize > Definitions.DOWNLOAD_BUFFER_SIZE ) {
