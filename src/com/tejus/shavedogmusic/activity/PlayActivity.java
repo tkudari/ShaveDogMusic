@@ -3,8 +3,10 @@ package com.tejus.shavedogmusic.activity;
 import com.tejus.shavedogmusic.R;
 
 import android.app.Activity;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.IBinder;
 
 import java.io.IOException;
@@ -40,7 +42,7 @@ public class PlayActivity extends Activity {
 
     private ImageButton playButton;
 
-    private TextView textStreamed, songName;
+    private TextView textStreamed, songName, wifiState;
 
     private boolean isPlaying;
 
@@ -49,6 +51,7 @@ public class PlayActivity extends Activity {
     ServiceConnection mConnection;
     ShaveService mShaveService;
     Context mContext;
+    Handler handler = new Handler();
 
     public void onCreate( Bundle icicle ) {
 
@@ -113,6 +116,7 @@ public class PlayActivity extends Activity {
 
     private void initControls() {
         textStreamed = ( TextView ) findViewById( R.id.text_kb_streamed );
+        wifiState = ( TextView ) findViewById( R.id.wifi_state );
         songName = ( TextView ) findViewById( R.id.song_name );
         streamButton = ( Button ) findViewById( R.id.button_stream );
         nextButton = ( Button ) findViewById( R.id.next );
@@ -146,6 +150,12 @@ public class PlayActivity extends Activity {
                 isPlaying = !isPlaying;
             }
         } );
+        handler.postDelayed( new Runnable() {
+            @Override
+            public void run() {
+                setViewValues();
+            }
+        }, 9000 );
     }
 
     private void startStreamingAudio() {
@@ -191,13 +201,37 @@ public class PlayActivity extends Activity {
     public class ServiceIntentReceiver extends BroadcastReceiver {
         @Override
         public void onReceive( Context context, Intent intent ) {
-            String userName = ( intent.getStringExtra( "user_name" ) != null ) ? intent.getStringExtra( "user_name" ) : null;
-            String songNameReceived = ( intent.getStringExtra( "song_name" ) != null ) ? intent.getStringExtra( "song_name" ) : null;
-            Logger.d( "broadcast intent received, songName = " + songNameReceived );
-            if ( songNameReceived != null && userName != null ) {
-                songName.setText( getResources().getString( R.string.now_playing ) + songNameReceived + ", from: " + userName );
+            String action = intent.getAction();
+            Logger.d( "PlayActivity.ServiceIntentReceiver: action = " + action );
+            if ( action.equals( Definitions.INTENT_SONG_PLAYING ) ) {
+                Logger.d( "PlayActivity.ServiceIntentReceiver: song name update received.." );
+                updateSongName( intent );
+            } else if ( action.equals( Definitions.WIFI_STATE_CHANGE ) ) {
+                Logger.d( "PlayActivity.ServiceIntentReceiver: wifi state update received.." );
+                setViewValues();
             }
 
+        }
+
+    }
+
+    private void updateSongName( Intent intent ) {
+        String userName = ( intent.getStringExtra( "user_name" ) != null ) ? intent.getStringExtra( "user_name" ) : null;
+        String songNameReceived = ( intent.getStringExtra( "song_name" ) != null ) ? intent.getStringExtra( "song_name" ) : null;
+        Logger.d( "broadcast intent received, songName = " + songNameReceived );
+        if ( songNameReceived != null && userName != null ) {
+            songName.setText( getResources().getString( R.string.now_playing ) + songNameReceived + ", from: " + userName );
+        }
+    }
+
+    void setViewValues() {
+        ConnectivityManager manager = ( ConnectivityManager ) getSystemService( Context.CONNECTIVITY_SERVICE );
+        if ( manager.getNetworkInfo( ConnectivityManager.TYPE_WIFI ).isConnectedOrConnecting() ) {
+            Logger.d( "setViewValues: wifi is ON............" );
+            wifiState.setText( "WIFI ON" );
+        } else {
+            Logger.d( "setViewValues: wifi is OFF............." );
+            wifiState.setText( "WIFI OFF!!!" );
         }
     }
 
@@ -215,6 +249,7 @@ public class PlayActivity extends Activity {
     void initReceiver() {
         IntentFilter filter = new IntentFilter();
         filter.addAction( Definitions.INTENT_SONG_PLAYING );
+        filter.addAction( Definitions.WIFI_STATE_CHANGE );
         registerReceiver( mShaveReceiver, filter );
     }
 
@@ -222,6 +257,12 @@ public class PlayActivity extends Activity {
     protected void onPause() {
         super.onPause();
         unregisterReceiver( mShaveReceiver );
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setViewValues();
     }
 
 }

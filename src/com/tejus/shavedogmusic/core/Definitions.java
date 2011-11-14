@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.Intent;
+
 public class Definitions {
     public static int IP_ADDRESS_INT;
     public static InetAddress IP_ADDRESS_INETADDRESS;
@@ -47,6 +49,7 @@ public class Definitions {
     
     public static final int TRANSACTION_PORT_START = 10000;
     public static final boolean IS_IN_DEBUG_MODE = true;
+    public static final String WIFI_STATE_CHANGE = "wifi_state_change";
 
     // Intent Names:
     public static String INTENT_SONG_PLAYING = "com.tejus.shavedogmusic.song_name";

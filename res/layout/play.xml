@@ -12,6 +12,12 @@
 		style="?android:attr/buttonStyleSmall" android:text="@string/play" />
 
 
+	<TextView android:id="@+id/wifi_state" android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:layout_marginTop="10px"
+		android:layout_toRightOf="@id/button_stream" android:text="bleh!"/>
+
+
+
 	<ProgressBar android:id="@+id/progress_bar"
 		android:layout_width="200px" android:layout_height="wrap_content"
 		android:layout_alignParentLeft="true"
@@ -26,8 +32,8 @@
 		android:layout_height="wrap_content" android:layout_marginTop="30dip"
 		style="?android:attr/buttonStyleSmall" android:text="@string/next"
 		android:visibility="gone" />
-		
-		
+
+
 
 	<TextView android:id="@+id/song_name" android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:textStyle="bold"

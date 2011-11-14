@@ -24,24 +24,40 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
+import android.os.Message;
 import android.widget.Toast;
 
 public class ShaveService extends Service {
 
-    private final Handler handler = new Handler();
+    private final Handler messageHandler = new Handler() {
+        @Override
+        public void handleMessage( Message msg ) {
+            String messageType = msg.getData().getString( "message_type" );
+            String messageValue = msg.getData().getString( "message_value" );
+            if ( messageType != null && messageValue != null ) {
+                if ( messageType.equals( "show_toast" ) ) {
+                    Logger.d( "ShaveService.handleMessage: gonna show toast as: " + messageValue );
+                    Toast.makeText( ShaveService.this, messageValue, Toast.LENGTH_SHORT );
+                }
+            }
+
+        }
+    };
 
     private final IBinder mBinder = new ShaveBinder();
     private NotificationManager mNM;
     private int NOTIFICATION = R.string.shave_service_started;
     private DatagramSocket mSearchSocket, mGenericSocket, mTestSocket;;
     WifiManager wifi;
+    boolean wifiConnected;
     DhcpInfo dhcp;
     ShaveFinder mFinder;
     public static ArrayList<String> peerList = new ArrayList<String>();
@@ -82,8 +98,22 @@ public class ShaveService extends Service {
 
     @Override
     public int onStartCommand( Intent intent, int flags, int startId ) {
-        Logger.d( "ShaveService Received start id " + startId + ": " + intent );
+
+        String action = ( intent != null ) ? intent.getAction() : null;
+        Logger.d( "ShaveService.onStartCommand: received intent.action = " + action );
+        if ( action != null ) {
+            if ( action.equals( Definitions.WIFI_STATE_CHANGE ) ) {
+                this.wifiChanged();
+            }
+        }
+
         return START_STICKY;
+    }
+
+    private void wifiChanged() {
+        Intent intent = new Intent( Definitions.WIFI_STATE_CHANGE );
+        Logger.d( "ShaveService.wifiChanged : sending broadcast.." );
+        this.sendBroadcast( intent );
     }
 
     @Override
@@ -178,18 +208,12 @@ public class ShaveService extends Service {
 
     // Searches our subnet & our parent - subnet
     private class ShaveFinder extends AsyncTask<Void, DatagramPacket, Void> {
-        Handler handler;
-
-        public ShaveFinder( Handler handler ) {
-            this.handler = handler;
-        }
 
         @Override
         protected void onProgressUpdate( DatagramPacket... packet ) {
             dealWithReceivedPacket( packet[ 0 ] );
         }
 
-        @SuppressWarnings( "unused" )
         @Override
         protected Void doInBackground( Void... shavealicious ) {
             String ourIp = getOurIp().getHostAddress();
@@ -212,13 +236,13 @@ public class ShaveService extends Service {
 
                     mTestSocket.send( sendPacket );
                 } catch ( SocketException e ) {
-                    Runnable updater = new Runnable() {
-                        public void run() {
-                            Toast.makeText( getApplicationContext(), getResources().getString( R.string.no_wifi ), Toast.LENGTH_SHORT );
-                        }
+                    Bundle bundle = new Bundle();
+                    bundle.putString( "message_type", "show_toast" );
+                    bundle.putString( "message_value", getResources().getString( R.string.no_wifi ) );
+                    Message showToast = new Message();
+                    showToast.setData( bundle );
+                    messageHandler.sendMessage( showToast );
 
-                    };
-                    this.handler.post( updater );
                 } catch ( Exception e ) {
                     e.printStackTrace();
                 }
@@ -244,13 +268,12 @@ public class ShaveService extends Service {
 
                             mTestSocket.send( sendPacket );
                         } catch ( SocketException e ) {
-                            Runnable updater = new Runnable() {
-                                public void run() {
-                                    Toast.makeText( getApplicationContext(), getResources().getString( R.string.no_wifi ), Toast.LENGTH_SHORT );
-                                }
-
-                            };
-                            this.handler.post( updater );
+                            Bundle bundle = new Bundle();
+                            bundle.putString( "message_type", "show_toast" );
+                            bundle.putString( "message_value", getResources().getString( R.string.no_wifi ) );
+                            Message showToast = new Message();
+                            showToast.setData( bundle );
+                            messageHandler.sendMessage( showToast );
                         }
 
                         catch ( Exception e ) {
@@ -274,7 +297,7 @@ public class ShaveService extends Service {
     }
 
     public void testPopulateList() {
-        mFinder = new ShaveFinder( handler );
+        mFinder = new ShaveFinder();
         mFinder.execute();
     }
 
