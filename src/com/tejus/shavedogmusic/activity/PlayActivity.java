@@ -4,7 +4,7 @@ import com.tejus.shavedogmusic.R;
 
 import android.app.Activity;
 import android.net.ConnectivityManager;
-import android.net.wifi.WifiManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -12,15 +12,12 @@ import android.os.IBinder;
 
 import java.io.IOException;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.media.MediaPlayer;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -103,19 +100,8 @@ public class PlayActivity extends Activity {
         }
     }
 
-    // private void dumpToLogs() {
-    // Logger.d( "PlayActivity.dumpToLogs: peerMap = " +
-    // ShaveService.peerMap.toString() );
-    // Logger.d( "PlayActivity.dumpToLogs: downloadPortMap = " +
-    // ShaveService.downloadPortMap.toString() );
-    // Logger.d( "PlayActivity.dumpToLogs: uploadPortMap = " +
-    // ShaveService.uploadPortMap.toString() );
-    // Logger.d( "PlayActivity.dumpToLogs: alreadyAssignedPorts = " +
-    // ShaveService.alreadyAssignedPorts.toString() );
-    // }
-
     private void testApi() {
-        Logger.d( "testApi: Environment.DIRECTORY_MUSIC = " + Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_MUSIC );
+        mShaveService.testApi();
     }
 
     private void initControls() {
@@ -216,7 +202,14 @@ public class PlayActivity extends Activity {
                 updateSongName( intent );
             } else if ( action.equals( Definitions.WIFI_STATE_CHANGE ) ) {
                 Logger.d( "PlayActivity.ServiceIntentReceiver: wifi state update received.." );
-                setViewValues();
+                // updating the view after 5s, since the intent received only
+                // indicates a WIFI state change
+                handler.postDelayed( new Runnable() {
+                    @Override
+                    public void run() {
+                        setViewValues();
+                    }
+                }, 5000 );
             }
 
         }
@@ -233,10 +226,14 @@ public class PlayActivity extends Activity {
     }
 
     void setViewValues() {
-        WifiManager wifi = ( WifiManager ) this.getSystemService( Context.WIFI_SERVICE );
-        if ( wifi.isWifiEnabled() ) {
+        ConnectivityManager connManager = ( ConnectivityManager ) getSystemService( CONNECTIVITY_SERVICE );
+        NetworkInfo netInfo = connManager.getNetworkInfo( ConnectivityManager.TYPE_WIFI );
+
+        if ( netInfo.isConnected() ) {
+            Logger.d( "setViewValues: wifi is on" );
             wifiState.setText( getResources().getString( R.string.wifi_on ) );
         } else {
+            Logger.d( "setViewValues: wifi is off" );
             wifiState.setText( getResources().getString( R.string.wifi_off ) );
         }
     }

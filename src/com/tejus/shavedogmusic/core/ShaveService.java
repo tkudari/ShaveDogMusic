@@ -24,6 +24,8 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
@@ -33,6 +35,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.widget.Toast;
 
 public class ShaveService extends Service {
@@ -57,6 +60,7 @@ public class ShaveService extends Service {
     private int NOTIFICATION = R.string.shave_service_started;
     private DatagramSocket mSearchSocket, mGenericSocket, mTestSocket;;
     WifiManager wifi;
+    WifiManager.WifiLock wifiLock;
     boolean wifiConnected;
     DhcpInfo dhcp;
     ShaveFinder mFinder;
@@ -120,6 +124,9 @@ public class ShaveService extends Service {
     public void onDestroy() {
         mNM.cancel( NOTIFICATION );
         Toast.makeText( this, R.string.shave_service_stopped, Toast.LENGTH_SHORT ).show();
+        if ( wifiLock.isHeld() ) {
+            wifiLock.release();
+        }
     }
 
     private class RequestListener extends AsyncTask<DatagramSocket, DatagramPacket, Void> {
@@ -186,6 +193,9 @@ public class ShaveService extends Service {
         }
         dhcp = wifi.getDhcpInfo();
         getOurIp();
+        WifiManager wifiManager = ( WifiManager ) this.getSystemService( Context.WIFI_SERVICE );
+        wifiLock = wifiManager.createWifiLock( WifiManager.WIFI_MODE_FULL, "MyWifiLock" );
+        wifiLock.acquire();
     }
 
     private InetAddress getOurIp() {
@@ -600,6 +610,29 @@ public class ShaveService extends Service {
         Logger.d( "ShaveService.dumpMapsToLogs: alreadyAssignedPorts = " + alreadyAssignedPorts.toString() );
         Logger.d( "ShaveService.dumpMapsToLogs: peerIndex = " + peerIndex );
 
+    }
+
+    public void testApi() {
+        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
+
+        String[] projection = {
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.DISPLAY_NAME,
+            MediaStore.Audio.Media.DURATION
+        };
+
+        Cursor cursor = getContentResolver().query( MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, selection, null, null );
+
+        ArrayList<String> songs = new ArrayList<String>();
+        while ( cursor.moveToNext() ) {
+            songs.add( cursor.getString( 0 ) + "||" + cursor.getString( 1 ) + "||" + cursor.getString( 2 ) + "||" + cursor.getString( 3 ) + "||"
+                    + cursor.getString( 4 ) + "||" + cursor.getString( 5 ) );
+        }
+        Logger.d( "gonna start dumping cursor.." );
+        DatabaseUtils.dumpCursor( cursor );
     }
 
 }
