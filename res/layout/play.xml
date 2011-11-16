@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:orientation="vertical" android:layout_width="fill_parent"
 	android:layout_height="fill_parent" android:padding="10px">
 
@@ -9,29 +9,33 @@
 
 	<Button android:id="@+id/button_stream" android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_marginTop="10px"
-		style="?android:attr/buttonStyleSmall" android:text="@string/play" />
+		style="?android:attr/buttonStyleSmall" android:text="@string/play"
+		android:layout_below="@id/text_kb_streamed" />
 
 
 	<TextView android:id="@+id/wifi_state" android:layout_width="wrap_content"
-		android:layout_height="wrap_content" android:layout_marginTop="10px"
-		android:layout_toRightOf="@id/button_stream" android:text="bleh!"/>
+		android:layout_height="wrap_content" android:layout_marginTop="20px"		
+		android:layout_alignParentRight="true" android:textStyle="bold"/>
 
 
 
 	<ProgressBar android:id="@+id/progress_bar"
 		android:layout_width="200px" android:layout_height="wrap_content"
 		android:layout_alignParentLeft="true"
-		style="?android:attr/progressBarStyleHorizontal" />
+		style="?android:attr/progressBarStyleHorizontal" 
+		android:layout_below="@id/button_stream"/>
 
 	<ImageButton android:id="@+id/button_play"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:layout_marginTop="5px" style="?android:attr/buttonStyleSmall"
-		android:src="@drawable/iconshave" />
+		android:src="@drawable/iconshave" 
+		android:layout_below="@id/progress_bar"/>
 
 	<Button android:id="@+id/next" android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_marginTop="30dip"
 		style="?android:attr/buttonStyleSmall" android:text="@string/next"
-		android:visibility="gone" />
+		android:visibility="gone"
+		android:layout_below="@id/button_play" />
 
 
 
@@ -39,4 +43,4 @@
 		android:layout_height="wrap_content" android:textStyle="bold"
 		android:text="@string/song_name" android:paddingTop="300dip" />
 
-</LinearLayout>
+</RelativeLayout>

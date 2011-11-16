@@ -53,6 +53,7 @@ public final class R {
         public static final int placeholder=0x7f04000d;
         public static final int play=0x7f040015;
         public static final int quit=0x7f040011;
+        public static final int reassoc=0x7f040018;
         public static final int set=0x7f040009;
         public static final int set_creds=0x7f040008;
         public static final int shave_service_disconnected=0x7f040004;
@@ -62,5 +63,7 @@ public final class R {
         public static final int test_api=0x7f040010;
         public static final int username=0x7f04000b;
         public static final int username_too_small=0x7f04000c;
+        public static final int wifi_off=0x7f040017;
+        public static final int wifi_on=0x7f040016;
     }
 }

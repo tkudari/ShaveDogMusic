@@ -4,6 +4,7 @@ import com.tejus.shavedogmusic.R;
 
 import android.app.Activity;
 import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -61,6 +62,8 @@ public class PlayActivity extends Activity {
         initControls();
         initReceiver();
         initShaveServiceStuff();
+        setViewValues();
+
     }
 
     @Override
@@ -76,6 +79,7 @@ public class PlayActivity extends Activity {
 
             case R.id.find_peers:
                 mShaveService.testPopulateList();
+                streamButton.setVisibility( View.VISIBLE );
                 return true;
 
             case R.id.set_creds:
@@ -86,9 +90,9 @@ public class PlayActivity extends Activity {
                 this.testApi();
                 return true;
 
-                // case R.id.dump_maps:
-                // dumpToLogs();
-                // return true;
+            case R.id.dump_maps:
+                mShaveService.dumpMapsToLogs();
+                return true;
 
             case R.id.quit:
                 this.quit();
@@ -150,18 +154,14 @@ public class PlayActivity extends Activity {
                 isPlaying = !isPlaying;
             }
         } );
-        handler.postDelayed( new Runnable() {
-            @Override
-            public void run() {
-                setViewValues();
-            }
-        }, 9000 );
+
     }
 
     private void startStreamingAudio() {
         try {
             final ProgressBar progressBar = ( ProgressBar ) findViewById( R.id.progress_bar );
             String peerToAsk = mShaveService.getNextPeer();
+            Logger.d( "PlayActivity.startStreamingAudio: gonna request: " + peerToAsk );
             String downloadAddress = mShaveService.getPeerAddress( peerToAsk );
             int downloadPort = mShaveService.getDownloadPort( peerToAsk );
             if ( audioStreamer != null ) {
@@ -170,6 +170,14 @@ public class PlayActivity extends Activity {
             audioStreamer = new ShaveMediaPlayer( this, mShaveService, textStreamed, songName, playButton, streamButton, progressBar );
             audioStreamer.startStreaming( downloadAddress, downloadPort, 1677, 214 );
             // streamButton.setEnabled(false);
+        } catch ( NullPointerException e ) {
+            // prompt to reassociate with peers:
+            Toast.makeText( this, getResources().getString( R.string.reassoc ), Toast.LENGTH_SHORT ).show();
+            e.printStackTrace();
+        } catch ( IndexOutOfBoundsException e ) {
+            // prompt to reassociate with peers:
+            Toast.makeText( this, getResources().getString( R.string.reassoc ), Toast.LENGTH_SHORT ).show();
+            e.printStackTrace();
         } catch ( IOException e ) {
             Log.e( getClass().getName(), "Error starting to stream audio.", e );
         }
@@ -225,13 +233,11 @@ public class PlayActivity extends Activity {
     }
 
     void setViewValues() {
-        ConnectivityManager manager = ( ConnectivityManager ) getSystemService( Context.CONNECTIVITY_SERVICE );
-        if ( manager.getNetworkInfo( ConnectivityManager.TYPE_WIFI ).isConnectedOrConnecting() ) {
-            Logger.d( "setViewValues: wifi is ON............" );
-            wifiState.setText( "WIFI ON" );
+        WifiManager wifi = ( WifiManager ) this.getSystemService( Context.WIFI_SERVICE );
+        if ( wifi.isWifiEnabled() ) {
+            wifiState.setText( getResources().getString( R.string.wifi_on ) );
         } else {
-            Logger.d( "setViewValues: wifi is OFF............." );
-            wifiState.setText( "WIFI OFF!!!" );
+            wifiState.setText( getResources().getString( R.string.wifi_off ) );
         }
     }
 
@@ -262,7 +268,9 @@ public class PlayActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        initReceiver();
         setViewValues();
+        initShaveServiceStuff();
     }
 
 }

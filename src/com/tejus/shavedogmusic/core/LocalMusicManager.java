@@ -89,8 +89,8 @@ public class LocalMusicManager {
                 return localItem;
             }
         }
-        // if all our songs have been served before, return our first song:
-        return musicList.get( 0 );
+        // if all our songs have been served before to userName:
+        return Definitions.SERVED_ALL_SONGS;
 
     }
 

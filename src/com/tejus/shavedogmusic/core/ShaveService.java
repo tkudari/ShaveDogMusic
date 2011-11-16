@@ -487,9 +487,28 @@ public class ShaveService extends Service {
             }
 
         } else { // We have served userName before.
-            return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" + localMusicManager.requestSongForUser( userName, peerMusicHistory.get( userName ) );
+            String songName = localMusicManager.requestSongForUser( userName, peerMusicHistory.get( userName ) );
+            // We've served userName all our songs, so start over for him:
+            if ( songName.equals( Definitions.SERVED_ALL_SONGS ) ) {
+                resetPeerHistory( userName );
+                getRecommendedSong( userName );
+            } else {
+                addSongToPeerHistory( userName, songName );
+                return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" + songName;
+            }
         }
+        return null;
 
+    }
+
+    private void resetPeerHistory( String userName ) {
+        peerMusicHistory.remove( userName );
+    }
+
+    private void addSongToPeerHistory( String userName, String songName ) {
+        ArrayList<String> songHistory = peerMusicHistory.get( userName );
+        songHistory.add( songName );
+        peerMusicHistory.put( userName, songHistory );
     }
 
     // return the last assigned port + '5' for now.
@@ -536,10 +555,18 @@ public class ShaveService extends Service {
     }
 
     public String getNextPeer() {
-        if ( peerIndex == peerList.size() - 1 ) {
-            return peerList.get( peerIndex );
-        } else {
+        if ( peerIndex == ( peerList.size() - 1 ) ) {
             return peerList.get( peerIndex++ );
+        } else if ( peerIndex == peerList.size() ) {
+            // we have cycled through all our peers:
+            peerIndex = 0;
+            return peerList.get( peerIndex++ );
+        } else {
+            if ( peerList.size() > 0 ) {
+                return peerList.get( peerIndex++ );
+            } else {
+                return null;
+            }
         }
 
     }
@@ -562,6 +589,17 @@ public class ShaveService extends Service {
 
     public String getSongName() {
         return songName;
+    }
+
+    public void dumpMapsToLogs() {
+        Logger.d( "ShaveService.dumpMapsToLogs: peerMap = " + peerMap.toString() );
+        Logger.d( "ShaveService.dumpMapsToLogs: peerList = " + peerList.toString() );
+        Logger.d( "ShaveService.dumpMapsToLogs: peerMusicHistory = " + peerMusicHistory.toString() );
+        Logger.d( "ShaveService.dumpMapsToLogs: uploadPortMap = " + uploadPortMap.toString() );
+        Logger.d( "ShaveService.dumpMapsToLogs: downloadPortMap = " + downloadPortMap.toString() );
+        Logger.d( "ShaveService.dumpMapsToLogs: alreadyAssignedPorts = " + alreadyAssignedPorts.toString() );
+        Logger.d( "ShaveService.dumpMapsToLogs: peerIndex = " + peerIndex );
+
     }
 
 }
