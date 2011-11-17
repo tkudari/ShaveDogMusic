@@ -75,7 +75,7 @@ public class ShaveService extends Service {
     // each peer is assigned exactly ONE uploader:
     private static HashMap<String, Uploader> peerUploaderMap = new HashMap<String, Uploader>();
 
-    LocalMusicManager localMusicManager = new LocalMusicManager();
+    LocalMusicManager localMusicManager;
 
     public class ShaveBinder extends Binder {
         public ShaveService getService() {
@@ -94,6 +94,7 @@ public class ShaveService extends Service {
         mNM = ( NotificationManager ) getSystemService( NOTIFICATION_SERVICE );
         showNotification();
         setUpNetworkStuff();
+        localMusicManager = new LocalMusicManager( getContentResolver() );
         // setup our request broadcast server:
         new RequestListener().execute( mSearchSocket );
         // // this's our generic listener:
@@ -491,7 +492,9 @@ public class ShaveService extends Service {
             if ( localMusicList.size() > 0 ) {
                 // create a new 'history' for userName:
                 peerMusicHistory.put( userName, new ArrayList<String>( Arrays.asList( localMusicList.get( 0 ) ) ) );
-                return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" + localMusicList.get( 0 );
+                // return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" +
+                // localMusicList.get( 0 );
+                return ( String ) localMusicManager.getMusicMeta( localMusicList.get( 0 ) ).get( LocalMusicManager.META_PATH );
             } else {
                 throw new Exception( "ShaveService.getRecommendedSong: Cannot read local Music listing!" );
             }
@@ -504,7 +507,9 @@ public class ShaveService extends Service {
                 getRecommendedSong( userName );
             } else {
                 addSongToPeerHistory( userName, songName );
-                return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" + songName;
+                // return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" +
+                // songName;
+                return ( String ) localMusicManager.getMusicMeta( songName ).get( LocalMusicManager.META_PATH );
             }
         }
         return null;
@@ -609,6 +614,7 @@ public class ShaveService extends Service {
         Logger.d( "ShaveService.dumpMapsToLogs: downloadPortMap = " + downloadPortMap.toString() );
         Logger.d( "ShaveService.dumpMapsToLogs: alreadyAssignedPorts = " + alreadyAssignedPorts.toString() );
         Logger.d( "ShaveService.dumpMapsToLogs: peerIndex = " + peerIndex );
+        Logger.d( "ShaveService.dumpMapsToLogs: musicMetaMap = " + localMusicManager.musicMetaMap.toString() );
 
     }
 
