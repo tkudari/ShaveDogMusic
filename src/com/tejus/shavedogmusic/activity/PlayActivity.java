@@ -40,7 +40,7 @@ public class PlayActivity extends Activity {
 
     private ImageButton playButton;
 
-    private TextView textStreamed, songName, wifiState;
+    private TextView textStreamed, songName, wifiState, artistName, peerName;
 
     private boolean isPlaying;
 
@@ -108,6 +108,8 @@ public class PlayActivity extends Activity {
         textStreamed = ( TextView ) findViewById( R.id.text_kb_streamed );
         wifiState = ( TextView ) findViewById( R.id.wifi_state );
         songName = ( TextView ) findViewById( R.id.song_name );
+        artistName = ( TextView ) findViewById( R.id.artist_name );
+        peerName = ( TextView ) findViewById( R.id.peer_name );
         streamButton = ( Button ) findViewById( R.id.button_stream );
         nextButton = ( Button ) findViewById( R.id.next );
         nextButton.setOnClickListener( new View.OnClickListener() {
@@ -199,7 +201,7 @@ public class PlayActivity extends Activity {
             Logger.d( "PlayActivity.ServiceIntentReceiver: action = " + action );
             if ( action.equals( Definitions.INTENT_SONG_PLAYING ) ) {
                 Logger.d( "PlayActivity.ServiceIntentReceiver: song name update received.." );
-                updateSongName( intent );
+                updateSongInfo( intent );
             } else if ( action.equals( Definitions.WIFI_STATE_CHANGE ) ) {
                 Logger.d( "PlayActivity.ServiceIntentReceiver: wifi state update received.." );
                 // updating the view after 5s, since the intent received only
@@ -216,12 +218,15 @@ public class PlayActivity extends Activity {
 
     }
 
-    private void updateSongName( Intent intent ) {
+    private void updateSongInfo( Intent intent ) {
         String userName = ( intent.getStringExtra( "user_name" ) != null ) ? intent.getStringExtra( "user_name" ) : null;
         String songNameReceived = ( intent.getStringExtra( "song_name" ) != null ) ? intent.getStringExtra( "song_name" ) : null;
+        String artistNameReceived = ( intent.getStringExtra( "artist_name" ) != null ) ? intent.getStringExtra( "artist_name" ) : null;
         Logger.d( "broadcast intent received, songName = " + songNameReceived );
-        if ( songNameReceived != null && userName != null ) {
-            songName.setText( getResources().getString( R.string.now_playing ) + songNameReceived + ", from: " + userName );
+        if ( songNameReceived != null && userName != null && artistNameReceived != null ) {
+            songName.setText( getResources().getString( R.string.now_playing ) + "  " + songNameReceived );
+            artistName.setText( getResources().getString( R.string.artist_name ) + "  " + artistNameReceived );
+            peerName.setText( getResources().getString( R.string.from_peer ) + "  " + userName );
         }
     }
 

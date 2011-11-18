@@ -14,33 +14,38 @@
 
 
 	<TextView android:id="@+id/wifi_state" android:layout_width="wrap_content"
-		android:layout_height="wrap_content" android:layout_marginTop="20px"		
-		android:layout_alignParentRight="true" android:textStyle="bold"/>
+		android:layout_height="wrap_content" android:layout_marginTop="20px"
+		android:layout_alignParentRight="true" android:textStyle="bold" />
 
 
 
 	<ProgressBar android:id="@+id/progress_bar"
 		android:layout_width="200px" android:layout_height="wrap_content"
 		android:layout_alignParentLeft="true"
-		style="?android:attr/progressBarStyleHorizontal" 
-		android:layout_below="@id/button_stream"/>
+		style="?android:attr/progressBarStyleHorizontal" android:layout_below="@id/button_stream" />
 
 	<ImageButton android:id="@+id/button_play"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:layout_marginTop="5px" style="?android:attr/buttonStyleSmall"
-		android:src="@drawable/iconshave" 
-		android:layout_below="@id/progress_bar"/>
+		android:src="@drawable/iconshave" android:layout_below="@id/progress_bar" />
 
 	<Button android:id="@+id/next" android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_marginTop="30dip"
 		style="?android:attr/buttonStyleSmall" android:text="@string/next"
-		android:visibility="gone"
-		android:layout_below="@id/button_play" />
+		android:visibility="gone" android:layout_below="@id/button_play" />
 
 
 
 	<TextView android:id="@+id/song_name" android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:textStyle="bold"
 		android:text="@string/song_name" android:paddingTop="300dip" />
+
+	<TextView android:id="@+id/artist_name" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:textStyle="bold"
+		android:layout_below="@id/song_name" />
+
+	<TextView android:id="@+id/peer_name" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:textStyle="bold"
+		android:layout_below="@id/artist_name" />
 
 </RelativeLayout>

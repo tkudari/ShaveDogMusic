@@ -375,17 +375,18 @@ public class ShaveService extends Service {
         }
 
         if ( words[ 0 ].equals( Definitions.PLAY_ACK ) ) {
-            Logger.d( "PLAY_ACK received from : " + words[ 2 ] + "; songName = " + words[ 1 ] );
-            playAckReceived( words[ 2 ], words[ 1 ] );
+            Logger.d( "PLAY_ACK received from : " + words[ 3 ] + "; songName = " + words[ 1 ] + "; artist = " + words[ 2 ] );
+            playAckReceived( words[ 2 ], words[ 1 ], words[ 3 ] );
         }
 
     }
 
-    private void playAckReceived( String userName, String songName ) {
+    private void playAckReceived( String artistName, String songName, String userName ) {
         Intent intent = new Intent( Definitions.INTENT_SONG_PLAYING );
         Logger.d( "playAckReceived : sending broadcast.." );
         intent.putExtra( "user_name", userName );
         intent.putExtra( "song_name", songName );
+        intent.putExtra( "artist_name", artistName );
         this.sendBroadcast( intent );
     }
 
@@ -441,13 +442,15 @@ public class ShaveService extends Service {
     }
 
     private void playRequestReceived( String userName, String address ) {
-        String songPath;
+        String songTitle;
         try {
-            songPath = getRecommendedSong( userName );
+            songTitle = getRecommendedSong( userName );
+            String songPath = localMusicManager.getMusicMeta( songTitle ).getString( LocalMusicManager.META_PATH );
+            String songArtist = localMusicManager.getMusicMeta( songTitle ).getString( LocalMusicManager.META_ARTIST );
             long songSize = getFileSize( songPath );
-            Logger.d( "ShaveService.playRequestReceived: uploading song: " + songPath + ", to: " + userName );
+            Logger.d( "ShaveService.playRequestReceived: uploading song: " + songTitle + ", to: " + userName );
             // send the file name in a separate message:
-            sendMessage( getPeerAddress( userName ), Definitions.PLAY_ACK + ":" + getFileNameTrivial( songPath ) );
+            sendMessage( getPeerAddress( userName ), Definitions.PLAY_ACK + ":" + songTitle + ":" + songArtist );
             uploadSong( userName, songPath, songSize );
 
         } catch ( Exception e ) {
@@ -494,7 +497,7 @@ public class ShaveService extends Service {
                 peerMusicHistory.put( userName, new ArrayList<String>( Arrays.asList( localMusicList.get( 0 ) ) ) );
                 // return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" +
                 // localMusicList.get( 0 );
-                return ( String ) localMusicManager.getMusicMeta( localMusicList.get( 0 ) ).get( LocalMusicManager.META_PATH );
+                return localMusicList.get( 0 );
             } else {
                 throw new Exception( "ShaveService.getRecommendedSong: Cannot read local Music listing!" );
             }
@@ -509,7 +512,7 @@ public class ShaveService extends Service {
                 addSongToPeerHistory( userName, songName );
                 // return localMusicManager.DEFAULT_MUSIC_DIRECTORY + "/" +
                 // songName;
-                return ( String ) localMusicManager.getMusicMeta( songName ).get( LocalMusicManager.META_PATH );
+                return songName;
             }
         }
         return null;

@@ -340,7 +340,7 @@ public class ShaveMediaPlayer {
         Runnable updater = new Runnable() {
             public void run() {
                 transferBufferToMediaPlayer();
-                textStreamed.setText( ( CharSequence ) ( "Audio full loaded: " + totalKbRead + " Kb read" ) );
+                textStreamed.setText( ( CharSequence ) ( "Fully Buffered: " + totalKbRead + " Kb read" ) );
             }
         };
         handler.post( updater );
