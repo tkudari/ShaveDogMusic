@@ -33,6 +33,8 @@ public class Definitions {
     public static String COMMAND_DELIM = ":*";
     public static int COMMAND_WORD_LENGTH = 4;
     public static String REPLY_ACCEPTED = "yes";
+    public static final String MSG_TYPE = "msg_type";
+    public static final String SENDER_ADDRESS = "sender_address";
     public static String REQUEST_LISTING = "show_files";
     public static String LISTING_REPLY = "listing_reply";
     public static String REQUEST_FILE = "request_file";
@@ -51,7 +53,8 @@ public class Definitions {
     public static final boolean IS_IN_DEBUG_MODE = true;
     public static final String WIFI_STATE_CHANGE = "wifi_state_change";
     public static final String SERVED_ALL_SONGS = "served_all_songs";
-
+    public static final String SENDER_UNAME = "sender_uname";
+    
     // Intent Names:
     public static String INTENT_SONG_PLAYING = "com.tejus.shavedogmusic.song_name";
     public static String INTENT_FRIEND_ACCEPTED = "com.tejus.shavedog.friend_accepted";

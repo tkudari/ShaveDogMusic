@@ -12,6 +12,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.tejus.shavedogmusic.core.Definitions;
 import com.tejus.shavedogmusic.R;
 import com.tejus.shavedogmusic.activity.PlayActivity;
@@ -133,7 +136,7 @@ public class ShaveService extends Service {
     private class RequestListener extends AsyncTask<DatagramSocket, DatagramPacket, Void> {
         @Override
         protected void onProgressUpdate( DatagramPacket... packet ) {
-            dealWithReceivedPacket( packet[ 0 ] );
+            dealWithReceivedPacketNew( packet[ 0 ] );
         }
 
         @Override
@@ -222,7 +225,7 @@ public class ShaveService extends Service {
 
         @Override
         protected void onProgressUpdate( DatagramPacket... packet ) {
-            dealWithReceivedPacket( packet[ 0 ] );
+            dealWithReceivedPacketNew( packet[ 0 ] );
         }
 
         @Override
@@ -238,13 +241,15 @@ public class ShaveService extends Service {
                         break;
                     }
                     String destinationAddress = subnet + "." + String.valueOf( i );
-                    String searchString = Definitions.DISCOVER_PING + ":" + getOurUserName() + ":" + getOurIp().toString().replace( "/", "" )
-                            + Definitions.END_DELIM;
-
+                    
+                    JSONObject searchObject = new JSONObject();
+                    searchObject.put( Definitions.MSG_TYPE, Definitions.DISCOVER_PING );
+                    searchObject.put( Definitions.SENDER_ADDRESS, getOurIp().toString().replace( "/", "" ) );
+                    searchObject.put( Definitions.SENDER_UNAME, getOurUserName() );                    
+                    
+                    byte[] data = searchObject.toString().getBytes();
                     Logger.d( "sending DISCOVER to = " + destinationAddress );
-                    DatagramPacket sendPacket = new DatagramPacket( searchString.getBytes(), searchString.getBytes().length,
-                            InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );
-
+                    DatagramPacket sendPacket = new DatagramPacket( data, data.length, InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );                    
                     mTestSocket.send( sendPacket );
                 } catch ( SocketException e ) {
                     Bundle bundle = new Bundle();
@@ -269,14 +274,16 @@ public class ShaveService extends Service {
                             if ( isCancelled() ) {
                                 break;
                             }
-                            String destinationAddress = parentAddress + "." + String.valueOf( i );
-                            String searchString = Definitions.DISCOVER_PING + ":" + getOurUserName() + ":" + getOurIp().toString().replace( "/", "" )
-                                    + Definitions.END_DELIM;
+                            String destinationAddress = parentAddress + "." + String.valueOf( i );                            
 
+                            JSONObject searchObject = new JSONObject();
+                            searchObject.put( Definitions.MSG_TYPE, Definitions.DISCOVER_PING );
+                            searchObject.put( Definitions.SENDER_ADDRESS, getOurIp().toString().replace( "/", "" ) );
+                            searchObject.put( Definitions.SENDER_UNAME, getOurUserName() );                            
+                            
+                            byte[] data = searchObject.toString().getBytes();
                             Logger.d( "sending DISCOVER to = " + destinationAddress );
-                            DatagramPacket sendPacket = new DatagramPacket( searchString.getBytes(), searchString.getBytes().length,
-                                    InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );
-
+                            DatagramPacket sendPacket = new DatagramPacket( data, data.length, InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );                            
                             mTestSocket.send( sendPacket );
                         } catch ( SocketException e ) {
                             Bundle bundle = new Bundle();
@@ -313,72 +320,107 @@ public class ShaveService extends Service {
     }
 
     // Request processor:
-    private void dealWithReceivedPacket( DatagramPacket packet ) {
+    // private void dealWithReceivedPacket( DatagramPacket packet ) {
+    //
+    // String words[] = new String[ Definitions.COMMAND_WORD_LENGTH + 1 ];
+    // int wordCounter = 0;
+    // String senderAddress, userName;
+    // String command = new String( packet.getData() );
+    // Logger.d( "command here = " + command );
+    //
+    // StringTokenizer strTok = new StringTokenizer( command,
+    // Definitions.COMMAND_DELIM );
+    // while ( strTok.hasMoreTokens() && wordCounter <=
+    // Definitions.COMMAND_WORD_LENGTH ) {
+    // words[ wordCounter ] = strTok.nextToken();
+    // Logger.d( "word here = " + words[ wordCounter ] );
+    // ++wordCounter;
+    // }
+    // for ( String word : words )
+    // Logger.d( "word = " + word );
+    //
+    // userName = words[ 1 ];
+    // senderAddress = words[ 2 ];
+    //
+    // if ( words[ 0 ].equals( Definitions.DISCOVER_PING ) ) {
+    // Logger.d( "DISCOVER_PING received...." );
+    // Logger.d( "cleanedup = " + cleanThisStringUp( words[ 2 ] ) );
+    // if ( cleanThisStringUp( words[ 2 ] ).equals( cleanThisStringUp(
+    // Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
+    // Logger.d( "yep, it's ours" );
+    // } else {
+    // discoverPingReceived( new String[] {
+    // words[ 1 ],
+    // cleanThisStringUp( words[ 2 ] )
+    // } );
+    // }
+    // }
+    //
+    // if ( words[ 0 ].equals( Definitions.DISCOVER_ACK ) ) {
+    // Logger.d( "DISCOVER_ACK received...." );
+    // Logger.d( "cleanedup DISCOVER_ACK = " + cleanThisStringUp( words[ 2 ] )
+    // );
+    //
+    // discoverAckReceived( new String[] {
+    // words[ 1 ],
+    // cleanThisStringUp( words[ 2 ] ),
+    // words[ 3 ]
+    // } );
+    // }
+    //
+    // if ( words[ 0 ].equals( Definitions.DISCOVER_ACK2 ) ) {
+    // Logger.d( "DISCOVER_ACK2 received...." );
+    // Logger.d( "cleanedup DISCOVER_ACK2 = " + cleanThisStringUp( words[ 2 ] )
+    // );
+    //
+    // discoverAck2Received( new String[] {
+    // words[ 1 ],
+    // cleanThisStringUp( words[ 2 ] ),
+    // words[ 3 ]
+    // } );
+    // }
+    //
+    // if ( words[ 0 ].equals( Definitions.PLAY_REQUEST ) ) {
+    // Logger.d( "PLAY_REQUEST received from : " + userName );
+    // playRequestReceived( userName, senderAddress );
+    //
+    // }
+    //
+    // if ( words[ 0 ].equals( Definitions.PLAY_ACK ) ) {
+    // Logger.d( "PLAY_ACK received from : " + words[ 3 ] + "; songName = " +
+    // words[ 1 ] + "; artist = " + words[ 2 ] );
+    // playAckReceived( words[ 2 ], words[ 1 ], words[ 3 ] );
+    // }
+    //
+    // }
 
-        String words[] = new String[ Definitions.COMMAND_WORD_LENGTH + 1 ];
-        int wordCounter = 0;
-        String senderAddress, userName;
-        String command = new String( packet.getData() );
-        Logger.d( "command here = " + command );
+    private void dealWithReceivedPacketNew( DatagramPacket packet ) {
+        try {
+            String payload = new String( packet.getData(), packet.getOffset(), packet.getLength() );
+            JSONObject jsonReceived = new JSONObject( payload );
+            String messageType = jsonReceived.getString( Definitions.MSG_TYPE );
+            String senderAddress = jsonReceived.getString( Definitions.SENDER_ADDRESS );
+            String senderUserName = jsonReceived.getString( Definitions.SENDER_UNAME );
+            Logger.d( "ShaveService.dealWithReceivedPacket: Message type received = " + messageType );
 
-        StringTokenizer strTok = new StringTokenizer( command, Definitions.COMMAND_DELIM );
-        while ( strTok.hasMoreTokens() && wordCounter <= Definitions.COMMAND_WORD_LENGTH ) {
-            words[ wordCounter ] = strTok.nextToken();
-            Logger.d( "word here = " + words[ wordCounter ] );
-            ++wordCounter;
-        }
-        for ( String word : words )
-            Logger.d( "word = " + word );
-
-        userName = words[ 1 ];
-        senderAddress = words[ 2 ];
-
-        if ( words[ 0 ].equals( Definitions.DISCOVER_PING ) ) {
-            Logger.d( "DISCOVER_PING received...." );
-            Logger.d( "cleanedup = " + cleanThisStringUp( words[ 2 ] ) );
-            if ( cleanThisStringUp( words[ 2 ] ).equals( cleanThisStringUp( Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
-                Logger.d( "yep, it's ours" );
-            } else {
-                discoverPingReceived( new String[] {
-                    words[ 1 ],
-                    cleanThisStringUp( words[ 2 ] )
-                } );
+            if ( messageType.equals( Definitions.DISCOVER_PING ) ) {
+                if ( senderAddress.equals( cleanThisStringUp( Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
+                    Logger.d( "ShaveService.dealWithReceivedPacket: DISCOVER_PING is our own, ignoring.." );
+                } else {
+                    discoverPingReceived( senderUserName, jsonReceived.getString( Definitions.SENDER_ADDRESS ) );
+                }
+            } else if ( messageType.equals( Definitions.DISCOVER_ACK ) ) {
+                discoverAckReceived( jsonReceived.getString( "upload_port" ), senderUserName, senderAddress );
+            } else if ( messageType.equals( Definitions.DISCOVER_ACK2 ) ) {
+                discoverAck2Received( jsonReceived.getString( "upload_port" ), senderUserName, senderAddress );
+            } else if ( messageType.equals( Definitions.PLAY_REQUEST ) ) {
+                playRequestReceived( senderUserName, senderAddress );
+            } else if ( messageType.equals( Definitions.PLAY_ACK ) ) {
+                playAckReceived( jsonReceived.getString( "song_artist" ), jsonReceived.getString( "song_title" ), senderUserName );
             }
+        } catch ( JSONException e ) {
+            e.printStackTrace();
         }
-
-        if ( words[ 0 ].equals( Definitions.DISCOVER_ACK ) ) {
-            Logger.d( "DISCOVER_ACK received...." );
-            Logger.d( "cleanedup DISCOVER_ACK = " + cleanThisStringUp( words[ 2 ] ) );
-
-            discoverAckReceived( new String[] {
-                words[ 1 ],
-                cleanThisStringUp( words[ 2 ] ),
-                words[ 3 ]
-            } );
-        }
-
-        if ( words[ 0 ].equals( Definitions.DISCOVER_ACK2 ) ) {
-            Logger.d( "DISCOVER_ACK2 received...." );
-            Logger.d( "cleanedup DISCOVER_ACK2 = " + cleanThisStringUp( words[ 2 ] ) );
-
-            discoverAck2Received( new String[] {
-                words[ 1 ],
-                cleanThisStringUp( words[ 2 ] ),
-                words[ 3 ]
-            } );
-        }
-
-        if ( words[ 0 ].equals( Definitions.PLAY_REQUEST ) ) {
-            Logger.d( "PLAY_REQUEST received from : " + userName );
-            playRequestReceived( userName, senderAddress );
-
-        }
-
-        if ( words[ 0 ].equals( Definitions.PLAY_ACK ) ) {
-            Logger.d( "PLAY_ACK received from : " + words[ 3 ] + "; songName = " + words[ 1 ] + "; artist = " + words[ 2 ] );
-            playAckReceived( words[ 2 ], words[ 1 ], words[ 3 ] );
-        }
-
     }
 
     private void playAckReceived( String artistName, String songName, String userName ) {
@@ -390,12 +432,7 @@ public class ShaveService extends Service {
         this.sendBroadcast( intent );
     }
 
-    private void discoverAckReceived( String[] senderDetails ) {
-        String userName = senderDetails[ 1 ];
-        String senderAddress = senderDetails[ 2 ];
-        String downloadPort = senderDetails[ 0 ];
-        Logger.d( "words in discoverAckReceived = " + senderDetails[ 0 ] + ", " + senderDetails[ 1 ] + ", " + senderDetails[ 2 ] );
-
+    private void discoverAckReceived( String downloadPort, String userName, String senderAddress ) {
         notePeer( userName, senderAddress );
         Logger.d( "ShaveService.discoverAckReceived: peerMap = " + peerMap.toString() );
         downloadPortMap.put( userName, Integer.parseInt( downloadPort ) );
@@ -405,18 +442,23 @@ public class ShaveService extends Service {
         String uploadPort = getUnassignedPort();
         uploadPortMap.put( userName, Integer.parseInt( uploadPort ) );
         alreadyAssignedPorts.add( Integer.parseInt( uploadPort ) );
-        sendMessage( senderAddress, Definitions.DISCOVER_ACK2 + ":" + uploadPort );
+        // sendMessage( senderAddress, Definitions.DISCOVER_ACK2 + ":" +
+        // uploadPort );
+        JSONObject message = new JSONObject();
+        try {
+            message.put( Definitions.MSG_TYPE, Definitions.DISCOVER_ACK2 );
+            message.put( "upload_port", uploadPort );
+        } catch ( JSONException e ) {
+            Logger.e( "Error sending DISCOVER_ACK2.." );
+            e.printStackTrace();
+        }
+        sendMessageNew( senderAddress, message );
 
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
         toast.show();
     }
 
-    private void discoverAck2Received( String[] senderDetails ) {
-        String userName = senderDetails[ 1 ];
-        String senderAddress = senderDetails[ 2 ];
-        String downloadPort = senderDetails[ 0 ];
-        Logger.d( "words in discoverAck2Received = " + senderDetails[ 0 ] + ", " + senderDetails[ 1 ] + ", " + senderDetails[ 2 ] );
-
+    private void discoverAck2Received( String downloadPort, String userName, String senderAddress ) {
         notePeer( userName, senderAddress );
         Logger.d( "ShaveService.discoverAck2Received: peerMap = " + peerMap.toString() );
         downloadPortMap.put( userName, Integer.parseInt( downloadPort ) );
@@ -426,16 +468,23 @@ public class ShaveService extends Service {
         toast.show();
     }
 
-    private void discoverPingReceived( String[] senderDetails ) {
+    private void discoverPingReceived( String userName, String senderAddress ) {
         // add the requester to our peer - list and reply back
-        String userName = senderDetails[ 0 ];
-        String senderAddress = senderDetails[ 1 ];
         String uploadPort = getUnassignedPort();
         uploadPortMap.put( userName, Integer.parseInt( uploadPort ) );
         alreadyAssignedPorts.add( Integer.parseInt( uploadPort ) );
         notePeer( userName, senderAddress );
         Logger.d( "ShaveService.discoverPingReceived: peerMap = " + peerMap.toString() );
-        sendMessage( senderAddress, Definitions.DISCOVER_ACK + ":" + uploadPort );
+        // sendMessage( senderAddress, Definitions.DISCOVER_ACK + ":" +
+        // uploadPort );
+        JSONObject message = new JSONObject();
+        try {
+            message.put( Definitions.MSG_TYPE, Definitions.DISCOVER_ACK );
+            message.put( "upload_port", uploadPort );
+        } catch ( JSONException e ) {
+            e.printStackTrace();
+        }
+        sendMessageNew( senderAddress, message );
 
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
         toast.show();
@@ -447,10 +496,21 @@ public class ShaveService extends Service {
             songTitle = getRecommendedSong( userName );
             String songPath = localMusicManager.getMusicMeta( songTitle ).getString( LocalMusicManager.META_PATH );
             String songArtist = localMusicManager.getMusicMeta( songTitle ).getString( LocalMusicManager.META_ARTIST );
+            String songDuration = localMusicManager.getMusicMeta( songTitle ).getString( LocalMusicManager.META_DURATION );
             long songSize = getFileSize( songPath );
             Logger.d( "ShaveService.playRequestReceived: uploading song: " + songTitle + ", to: " + userName );
-            // send the file name in a separate message:
-            sendMessage( getPeerAddress( userName ), Definitions.PLAY_ACK + ":" + songTitle + ":" + songArtist );
+
+            // sendMessage( getPeerAddress( userName ), Definitions.PLAY_ACK +
+            // ":" + songTitle + ":" + songArtist );
+            JSONObject message = new JSONObject();
+            message.put( Definitions.MSG_TYPE, Definitions.PLAY_ACK );
+            message.put( "song_title", songTitle );
+            message.put( "song_artist", songArtist );
+            message.put( "song_duration", songDuration );
+
+            // send the file meta in a separate message:
+            sendMessageNew( getPeerAddress( userName ), message );
+
             uploadSong( userName, songPath, songSize );
 
         } catch ( Exception e ) {
@@ -547,19 +607,40 @@ public class ShaveService extends Service {
         return string.replace( "\\?", "" ).replace( "*", "" ).replace( "//", "" );
     }
 
-    public void sendMessage( String destinationAddress, String message ) {
+    // public void sendMessage( String destinationAddress, String message ) {
+    //
+    // String sendMessage = message + ":" + getOurUserName() + ":" +
+    // getOurIp().toString().replace( "/", "" ) + Definitions.END_DELIM;
+    // byte[] testArr = sendMessage.getBytes();
+    //
+    // Logger.d( "sendMessage = " + sendMessage + ", len = " +
+    // sendMessage.length() );
+    // Logger.d( "testarr = " + testArr.toString() + ", len = " + testArr.length
+    // );
+    // try {
+    // Logger.d( "destination address = " + InetAddress.getByName(
+    // destinationAddress ) );
+    // DatagramPacket sendPacket = new DatagramPacket( sendMessage.getBytes(),
+    // sendMessage.getBytes().length, InetAddress.getByName( destinationAddress
+    // ),
+    // Definitions.GENERIC_SERVER_PORT );
+    // mGenericSocket.send( sendPacket );
+    // } catch ( Exception e ) {
+    // e.printStackTrace();
+    // }
+    //
+    // }
 
-        String sendMessage = message + ":" + getOurUserName() + ":" + getOurIp().toString().replace( "/", "" ) + Definitions.END_DELIM;
-        byte[] testArr = sendMessage.getBytes();
-
-        Logger.d( "sendMessage = " + sendMessage + ", len = " + sendMessage.length() );
-        Logger.d( "testarr = " + testArr.toString() + ", len = " + testArr.length );
+    public void sendMessageNew( String destinationAddress, JSONObject message ) {
         try {
-            Logger.d( "destination address = " + InetAddress.getByName( destinationAddress ) );
-            DatagramPacket sendPacket = new DatagramPacket( sendMessage.getBytes(), sendMessage.getBytes().length, InetAddress.getByName( destinationAddress ),
-                    Definitions.GENERIC_SERVER_PORT );
+            message.put( Definitions.SENDER_ADDRESS, getOurIp().toString().replace( "/", "" ) );
+            message.put( Definitions.SENDER_UNAME, getOurUserName() );
+            byte[] data = message.toString().getBytes();
+            Logger.d( "ShaveService.sendMessage: destination address = " + InetAddress.getByName( destinationAddress ) );
+            DatagramPacket sendPacket = new DatagramPacket( data, data.length, InetAddress.getByName( destinationAddress ), Definitions.GENERIC_SERVER_PORT );
             mGenericSocket.send( sendPacket );
         } catch ( Exception e ) {
+            Logger.e( "Error while sending message.." );
             e.printStackTrace();
         }
 

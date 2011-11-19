@@ -13,6 +13,9 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.tejus.shavedogmusic.core.Definitions;
 import com.tejus.shavedogmusic.utils.Logger;
 
@@ -97,9 +100,14 @@ public class ShaveMediaPlayer {
      * setDataSource for that local file
      */
     public void downloadAudioIncrement( String destinationAddress, int downloadPort, long fileSize ) throws IOException {
-        String message = Definitions.PLAY_REQUEST;
+        JSONObject message = new JSONObject();
+        try {
+            message.put( Definitions.MSG_TYPE, Definitions.PLAY_REQUEST );
+        } catch ( JSONException e1 ) {
+            e1.printStackTrace();
+        }
         // Ask the peer to start uploading:
-        mShaveService.sendMessage( destinationAddress, message );
+        mShaveService.sendMessageNew( destinationAddress, message );
 
         // Wait for the upload, download the song:
 
