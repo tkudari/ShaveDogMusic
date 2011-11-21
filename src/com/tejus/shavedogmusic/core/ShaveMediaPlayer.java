@@ -32,18 +32,16 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-/**
- * MediaPlayer does not yet support streaming from external URLs so this class
- * provides a pseudo-streaming function by downloading the content incrementally
- * & playing as soon as we get enough audio in our temporary storage.
- */
-
 public class ShaveMediaPlayer {
 
     private String lname = "ShaveMediaPlayer";
-    private static final int INTIAL_KB_BUFFER = 96 * 10 / 8;// assume
-                                                            // 96kbps*10secs/8bits
-                                                            // per byte
+    private static final int INTIAL_KB_BUFFER = 239 * 10 / 8;// assume
+                                                             // 239kbps*10secs/8bits
+                                                             // per byte (based
+                                                             // on max bit rate
+                                                             // of a couple of
+                                                             // songs, could be
+                                                             // different)
     private TextView textStreamed;
     private ImageButton playButton;
     private ProgressBar progressBar;
@@ -229,17 +227,14 @@ public class ShaveMediaPlayer {
                             Logger.d( "testMediaBuffer: startingMediaPlayer" );
                             startMediaPlayer();
                         } catch ( Exception e ) {
-                            Log.e( getClass().getName(), "Error copying buffered conent.", e );
+                            Logger.e( "Error copying buffered content" );
+                            e.printStackTrace();
                         }
                     }
-                } else if ( mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition() <= 1000 ) {
-                    // NOTE: The media player has stopped at the end so transfer
-                    // any existing buffered data
-                    // We test for < 1second of data because the media player
-                    // can stop when there is still
-                    // a few milliseconds of data left to play
+                } else if ( mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition() <= 3000 ) { 
+                    // changed to 3s coz a few devices would've reached this and consume > 1s worth of content
                     Logger.d( " gonna transferBufferToMediaPlayer.." );
-                    transferBufferToMediaPlayer();
+                    transferBufferToMediaPlayer( false );
                 }
 
                 if ( mediaPlayer != null ) {
@@ -256,8 +251,8 @@ public class ShaveMediaPlayer {
             File bufferedFile = new File( context.getCacheDir(), "playingMedia" + ( counter - 1 ) + ".mp3" );
             moveFile( downloadingMediaFile, bufferedFile );
 
-            Log.e( "Player", bufferedFile.length() + "" );
-            Log.e( "Player", bufferedFile.getAbsolutePath() );
+            Logger.d( "ShaveMediaPlayer.startMediaPlayer: " + bufferedFile.length() + "" );
+            Logger.d( "ShaveMediaPlayer.startMediaPlayer: " + bufferedFile.getAbsolutePath() );
             mediaPlayer = new MediaPlayer();
             FileInputStream fIs = new FileInputStream( bufferedFile );
             FileDescriptor fD = fIs.getFD();
@@ -278,13 +273,13 @@ public class ShaveMediaPlayer {
      * on non-main UI thread can causes crashes to so perform this using a
      * Handler.
      */
-    private void transferBufferToMediaPlayer() {
+    private void transferBufferToMediaPlayer( boolean isFullyBuffered ) {
         try {
             // First determine if we need to restart the player after
             // transferring data...e.g. perhaps the user pressed pause
             boolean wasPlaying = mediaPlayer.isPlaying();
             int curPosition = mediaPlayer.getCurrentPosition();
-            if ( !wasPlaying ) {
+            if ( !wasPlaying || isFullyBuffered ) {
                 mediaPlayer.pause();
             }
 
@@ -298,7 +293,7 @@ public class ShaveMediaPlayer {
             FileDescriptor fD = fIs.getFD();
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setDataSource( fD );
-            // mediaPlayer.setAudioStreamType(AudioSystem.STREAM_MUSIC);
+            mediaPlayer.setAudioStreamType( AudioManager.STREAM_MUSIC );
             mediaPlayer.prepare();
             mediaPlayer.seekTo( curPosition );
 
@@ -347,7 +342,7 @@ public class ShaveMediaPlayer {
     private void fireDataFullyLoaded() {
         Runnable updater = new Runnable() {
             public void run() {
-                transferBufferToMediaPlayer();
+                transferBufferToMediaPlayer( true );
                 textStreamed.setText( ( CharSequence ) ( "Fully Buffered: " + totalKbRead + " Kb read" ) );
             }
         };
