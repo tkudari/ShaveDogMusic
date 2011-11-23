@@ -15,21 +15,23 @@ public final class R {
         public static final int iconshave=0x7f020001;
     }
     public static final class id {
-        public static final int artist_name=0x7f06000a;
+        public static final int artist_name=0x7f06000c;
         public static final int back=0x7f060002;
-        public static final int button_play=0x7f060007;
+        public static final int button_play=0x7f060009;
         public static final int button_stream=0x7f060004;
-        public static final int dump_maps=0x7f06000e;
-        public static final int find_peers=0x7f06000c;
-        public static final int next=0x7f060008;
-        public static final int peer_name=0x7f06000b;
+        public static final int dump_maps=0x7f060010;
+        public static final int find_peers=0x7f06000e;
+        public static final int next=0x7f06000a;
+        public static final int peer_name=0x7f06000d;
         public static final int progress_bar=0x7f060006;
-        public static final int quit=0x7f060010;
+        public static final int quit=0x7f060012;
         public static final int set=0x7f060001;
-        public static final int set_creds=0x7f06000d;
-        public static final int song_name=0x7f060009;
-        public static final int test_api=0x7f06000f;
+        public static final int set_creds=0x7f06000f;
+        public static final int song_name=0x7f06000b;
+        public static final int test_api=0x7f060011;
         public static final int text_kb_streamed=0x7f060003;
+        public static final int time_elapsed=0x7f060007;
+        public static final int time_left=0x7f060008;
         public static final int username=0x7f060000;
         public static final int wifi_state=0x7f060005;
     }

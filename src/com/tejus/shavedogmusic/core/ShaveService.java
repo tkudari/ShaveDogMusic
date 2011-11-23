@@ -161,7 +161,7 @@ public class ShaveService extends Service {
     private void showNotification() {
         CharSequence text = getText( R.string.shave_service_started );
         Notification notification = new Notification( R.drawable.iconshave, text, System.currentTimeMillis() );
-        PendingIntent contentIntent = PendingIntent.getActivity( this, 0, new Intent( this, PlayActivity.class ), 0 );
+        PendingIntent contentIntent = PendingIntent.getActivity( this, 0, new Intent( this, PlayActivity.class ).setFlags( Intent.FLAG_ACTIVITY_CLEAR_TOP ), 0 );
         notification.setLatestEventInfo( this, getText( R.string.awesomeness ), text, contentIntent );
         mNM.notify( NOTIFICATION, notification );
     }
@@ -241,15 +241,16 @@ public class ShaveService extends Service {
                         break;
                     }
                     String destinationAddress = subnet + "." + String.valueOf( i );
-                    
+
                     JSONObject searchObject = new JSONObject();
                     searchObject.put( Definitions.MSG_TYPE, Definitions.DISCOVER_PING );
                     searchObject.put( Definitions.SENDER_ADDRESS, getOurIp().toString().replace( "/", "" ) );
-                    searchObject.put( Definitions.SENDER_UNAME, getOurUserName() );                    
-                    
+                    searchObject.put( Definitions.SENDER_UNAME, getOurUserName() );
+
                     byte[] data = searchObject.toString().getBytes();
                     Logger.d( "sending DISCOVER to = " + destinationAddress );
-                    DatagramPacket sendPacket = new DatagramPacket( data, data.length, InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );                    
+                    DatagramPacket sendPacket = new DatagramPacket( data, data.length, InetAddress.getByName( destinationAddress ),
+                            Definitions.SEARCH_SERVER_PORT );
                     mTestSocket.send( sendPacket );
                 } catch ( SocketException e ) {
                     Bundle bundle = new Bundle();
@@ -274,16 +275,17 @@ public class ShaveService extends Service {
                             if ( isCancelled() ) {
                                 break;
                             }
-                            String destinationAddress = parentAddress + "." + String.valueOf( i );                            
+                            String destinationAddress = parentAddress + "." + String.valueOf( i );
 
                             JSONObject searchObject = new JSONObject();
                             searchObject.put( Definitions.MSG_TYPE, Definitions.DISCOVER_PING );
                             searchObject.put( Definitions.SENDER_ADDRESS, getOurIp().toString().replace( "/", "" ) );
-                            searchObject.put( Definitions.SENDER_UNAME, getOurUserName() );                            
-                            
+                            searchObject.put( Definitions.SENDER_UNAME, getOurUserName() );
+
                             byte[] data = searchObject.toString().getBytes();
                             Logger.d( "sending DISCOVER to = " + destinationAddress );
-                            DatagramPacket sendPacket = new DatagramPacket( data, data.length, InetAddress.getByName( destinationAddress ), Definitions.SEARCH_SERVER_PORT );                            
+                            DatagramPacket sendPacket = new DatagramPacket( data, data.length, InetAddress.getByName( destinationAddress ),
+                                    Definitions.SEARCH_SERVER_PORT );
                             mTestSocket.send( sendPacket );
                         } catch ( SocketException e ) {
                             Bundle bundle = new Bundle();
@@ -416,19 +418,21 @@ public class ShaveService extends Service {
             } else if ( messageType.equals( Definitions.PLAY_REQUEST ) ) {
                 playRequestReceived( senderUserName, senderAddress );
             } else if ( messageType.equals( Definitions.PLAY_ACK ) ) {
-                playAckReceived( jsonReceived.getString( "song_artist" ), jsonReceived.getString( "song_title" ), senderUserName );
+                playAckReceived( jsonReceived.getString( "song_artist" ), jsonReceived.getString( "song_title" ), senderUserName,
+                        jsonReceived.getString( "song_duration" ) );
             }
         } catch ( JSONException e ) {
             e.printStackTrace();
         }
     }
 
-    private void playAckReceived( String artistName, String songName, String userName ) {
+    private void playAckReceived( String artistName, String songName, String userName, String songDuration ) {
         Intent intent = new Intent( Definitions.INTENT_SONG_PLAYING );
         Logger.d( "playAckReceived : sending broadcast.." );
         intent.putExtra( "user_name", userName );
         intent.putExtra( "song_name", songName );
         intent.putExtra( "artist_name", artistName );
+        intent.putExtra( "song_duration", songDuration );
         this.sendBroadcast( intent );
     }
 

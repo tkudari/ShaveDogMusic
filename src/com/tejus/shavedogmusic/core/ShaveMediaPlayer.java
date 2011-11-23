@@ -42,7 +42,7 @@ public class ShaveMediaPlayer {
                                                              // of a couple of
                                                              // songs, could be
                                                              // different)
-    private TextView textStreamed;
+    private TextView textStreamed, timeElapsed, timeLeft;
     private ImageButton playButton;
     private ProgressBar progressBar;
     // Track for display by progressBar
@@ -61,10 +61,12 @@ public class ShaveMediaPlayer {
     private int downloadPort;
     private ServerSocket serverSocket;
 
-    public ShaveMediaPlayer( Context context, ShaveService serviceObject, TextView textStreamed, TextView songName, ImageButton playButton,
-            Button streamButton, ProgressBar progressBar ) {
+    public ShaveMediaPlayer( Context context, ShaveService serviceObject, TextView textStreamed, TextView timeElapsed, TextView timeLeft, TextView songName,
+            ImageButton playButton, Button streamButton, ProgressBar progressBar ) {
         this.context = context;
         this.textStreamed = textStreamed;
+        this.timeElapsed = timeElapsed;
+        this.timeLeft = timeLeft;
         this.playButton = playButton;
         this.progressBar = progressBar;
         this.mShaveService = serviceObject;
@@ -74,15 +76,14 @@ public class ShaveMediaPlayer {
      * Progressively download the media to a temporary location and update the
      * MediaPlayer as new content becomes available.
      */
-    public void startStreaming( final String downloadAddress, final int downloadPort, final long mediaLengthInKb, long mediaLengthInSeconds ) throws IOException {
+    public void startStreaming( final String downloadAddress, final int downloadPort, final long mediaLengthInKb ) throws IOException {
         this.mediaLengthInKb = mediaLengthInKb;
-        this.mediaLengthInSeconds = mediaLengthInSeconds;
         Logger.d( "Song name in MPlayer = " + mShaveService.getSongName() );
 
         Runnable r = new Runnable() {
             public void run() {
                 try {
-                    downloadAudioIncrement( downloadAddress, downloadPort, mediaLengthInKb );
+                    downloadAudioIncrement( downloadAddress, downloadPort );
                 } catch ( IOException e ) {
                     Logger.e( "Unable to initialize the MediaPlayer for peerAddress = " + downloadAddress );
                     e.printStackTrace();
@@ -97,7 +98,7 @@ public class ShaveMediaPlayer {
      * Download the url stream to a temporary location and then call the
      * setDataSource for that local file
      */
-    public void downloadAudioIncrement( String destinationAddress, int downloadPort, long fileSize ) throws IOException {
+    public void downloadAudioIncrement( String destinationAddress, int downloadPort ) throws IOException {
         JSONObject message = new JSONObject();
         try {
             message.put( Definitions.MSG_TYPE, Definitions.PLAY_REQUEST );
@@ -231,8 +232,9 @@ public class ShaveMediaPlayer {
                             e.printStackTrace();
                         }
                     }
-                } else if ( mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition() <= 3000 ) { 
-                    // changed to 3s coz a few devices would've reached this and consume > 1s worth of content
+                } else if ( mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition() <= 3000 ) {
+                    // changed to 3s coz a few devices would've reached this and
+                    // consume > 1s worth of content
                     Logger.d( " gonna transferBufferToMediaPlayer.." );
                     transferBufferToMediaPlayer( false );
                 }
@@ -355,6 +357,8 @@ public class ShaveMediaPlayer {
 
     public void startPlayProgressUpdater() {
         float progress = ( ( ( float ) mediaPlayer.getCurrentPosition() / 1000 ) / ( float ) mediaLengthInSeconds );
+        timeElapsed.setText( getDisplayableTime( mediaPlayer.getCurrentPosition() ) );
+        timeLeft.setText( "-" + getDisplayableTime( mediaLengthInSeconds * 1000 - mediaPlayer.getCurrentPosition() ) );
         progressBar.setProgress( ( int ) ( progress * 100 ) );
 
         if ( mediaPlayer.isPlaying() ) {
@@ -364,6 +368,17 @@ public class ShaveMediaPlayer {
                 }
             };
             handler.postDelayed( notification, 1000 );
+        }
+    }
+
+    private String getDisplayableTime( long timeInMills ) {
+        long totalSeconds = timeInMills / 1000;
+        int minutes = ( int ) ( totalSeconds / 60 );
+        int seconds = ( int ) ( totalSeconds % 60 );
+        if ( seconds < 10 ) {
+            return Integer.toString( minutes ) + ":" + "0" + Integer.toString( seconds );
+        } else {
+            return Integer.toString( minutes ) + ":" + Integer.toString( seconds );
         }
     }
 
@@ -409,6 +424,10 @@ public class ShaveMediaPlayer {
         } catch ( IOException e ) {
             e.printStackTrace();
         }
+    }
+
+    public void setSongDuration( String duration ) {
+        mediaLengthInSeconds = Integer.parseInt( duration ) / 1000;
     }
 
 }

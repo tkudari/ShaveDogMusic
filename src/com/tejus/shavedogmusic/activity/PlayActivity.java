@@ -40,7 +40,7 @@ public class PlayActivity extends Activity {
 
     private ImageButton playButton;
 
-    private TextView textStreamed, songName, wifiState, artistName, peerName;
+    private TextView textStreamed, timeElapsed, timeLeft, songName, wifiState, artistName, peerName;
 
     private boolean isPlaying;
 
@@ -106,6 +106,8 @@ public class PlayActivity extends Activity {
 
     private void initControls() {
         textStreamed = ( TextView ) findViewById( R.id.text_kb_streamed );
+        timeElapsed = ( TextView ) findViewById( R.id.time_elapsed );
+        timeLeft = ( TextView ) findViewById( R.id.time_left );
         wifiState = ( TextView ) findViewById( R.id.wifi_state );
         songName = ( TextView ) findViewById( R.id.song_name );
         artistName = ( TextView ) findViewById( R.id.artist_name );
@@ -114,8 +116,16 @@ public class PlayActivity extends Activity {
         nextButton = ( Button ) findViewById( R.id.next );
         nextButton.setOnClickListener( new View.OnClickListener() {
             public void onClick( View view ) {
-                audioStreamer.closePreviousDownloadSocket();
                 // need to do this since we're using one download port per peer:
+                try {
+                    audioStreamer.closePreviousDownloadSocket();
+                } catch ( NullPointerException e ) {
+                    // we got here because our previous play request was
+                    // interrupted coz of something, no worries, move on for
+                    // now.
+                    Logger.e( "Error getting next song.." );
+                    e.printStackTrace();
+                }
                 startStreamingAudio();
             }
         } );
@@ -155,8 +165,8 @@ public class PlayActivity extends Activity {
             if ( audioStreamer != null ) {
                 audioStreamer.interrupt();
             }
-            audioStreamer = new ShaveMediaPlayer( this, mShaveService, textStreamed, songName, playButton, streamButton, progressBar );
-            audioStreamer.startStreaming( downloadAddress, downloadPort, 1677, 214 );
+            audioStreamer = new ShaveMediaPlayer( this, mShaveService, textStreamed, timeElapsed, timeLeft, songName, playButton, streamButton, progressBar );
+            audioStreamer.startStreaming( downloadAddress, downloadPort, 1677 );
             // streamButton.setEnabled(false);
         } catch ( NullPointerException e ) {
             // prompt to reassociate with peers:
@@ -222,6 +232,8 @@ public class PlayActivity extends Activity {
         String userName = ( intent.getStringExtra( "user_name" ) != null ) ? intent.getStringExtra( "user_name" ) : null;
         String songNameReceived = ( intent.getStringExtra( "song_name" ) != null ) ? intent.getStringExtra( "song_name" ) : null;
         String artistNameReceived = ( intent.getStringExtra( "artist_name" ) != null ) ? intent.getStringExtra( "artist_name" ) : null;
+        String songDuration = ( intent.getStringExtra( "song_duration" ) != null ) ? intent.getStringExtra( "song_duration" ) : null;
+        audioStreamer.setSongDuration( songDuration );
         Logger.d( "broadcast intent received, songName = " + songNameReceived );
         if ( songNameReceived != null && userName != null && artistNameReceived != null ) {
             songName.setText( getResources().getString( R.string.now_playing ) + "  " + songNameReceived );
