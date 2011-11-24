@@ -3,6 +3,7 @@ package com.tejus.shavedogmusic.activity;
 import com.tejus.shavedogmusic.R;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -41,6 +42,7 @@ public class PlayActivity extends Activity {
     private ImageButton playButton;
 
     private TextView textStreamed, timeElapsed, timeLeft, songName, wifiState, artistName, peerName;
+    private ProgressDialog searchProgressDialog;
 
     private boolean isPlaying;
 
@@ -49,7 +51,7 @@ public class PlayActivity extends Activity {
     ServiceConnection mConnection;
     ShaveService mShaveService;
     Context mContext;
-    Handler handler = new Handler();
+    Handler handler = new Handler();    
 
     public void onCreate( Bundle icicle ) {
 
@@ -131,7 +133,12 @@ public class PlayActivity extends Activity {
         } );
         streamButton.setOnClickListener( new View.OnClickListener() {
             public void onClick( View view ) {
-                startStreamingAudio();
+                // if we know of no peers:
+                if ( mShaveService.getPeerCount() == 0 ) {
+                    mShaveService.testPopulateList();                    
+                } else {
+                    startStreamingAudio();
+                }
                 streamButton.setVisibility( View.GONE );
                 nextButton.setVisibility( View.VISIBLE );
             }
@@ -152,7 +159,9 @@ public class PlayActivity extends Activity {
                 isPlaying = !isPlaying;
             }
         } );
-
+        searchProgressDialog = new ProgressDialog( this );
+        searchProgressDialog.setMessage( getResources().getString( R.string.searching_peers_message ) );
+        searchProgressDialog.setCancelable( false );
     }
 
     private void startStreamingAudio() {
@@ -169,6 +178,7 @@ public class PlayActivity extends Activity {
             audioStreamer.startStreaming( downloadAddress, downloadPort, 1677 );
             // streamButton.setEnabled(false);
         } catch ( NullPointerException e ) {
+
             // prompt to reassociate with peers:
             Toast.makeText( this, getResources().getString( R.string.reassoc ), Toast.LENGTH_SHORT ).show();
             e.printStackTrace();
@@ -222,8 +232,24 @@ public class PlayActivity extends Activity {
                         setViewValues();
                     }
                 }, 5000 );
+            } else if ( action.equals( Definitions.START_SEARCH_PROGRESS ) ) {
+                startSearchProgressDialog();
+            } else if ( action.equals( Definitions.STOP_SEARCH_PROGRESS ) ) {
+                stopSearchProgressDialog();
             }
 
+        }
+
+        private void stopSearchProgressDialog() {
+            if ( searchProgressDialog != null && searchProgressDialog.isShowing() ) {
+                searchProgressDialog.dismiss();
+                startStreamingAudio();
+            }            
+            
+        }
+
+        private void startSearchProgressDialog() {
+            searchProgressDialog.show();
         }
 
     }
@@ -269,7 +295,8 @@ public class PlayActivity extends Activity {
     void initReceiver() {
         IntentFilter filter = new IntentFilter();
         filter.addAction( Definitions.INTENT_SONG_PLAYING );
-        filter.addAction( Definitions.WIFI_STATE_CHANGE );
+        filter.addAction( Definitions.START_SEARCH_PROGRESS );
+        filter.addAction( Definitions.STOP_SEARCH_PROGRESS );
         registerReceiver( mShaveReceiver, filter );
     }
 

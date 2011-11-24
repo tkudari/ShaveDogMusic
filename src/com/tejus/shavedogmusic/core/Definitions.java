@@ -54,6 +54,8 @@ public class Definitions {
     public static final String WIFI_STATE_CHANGE = "wifi_state_change";
     public static final String SERVED_ALL_SONGS = "served_all_songs";
     public static final String SENDER_UNAME = "sender_uname";
+    public static final String START_SEARCH_PROGRESS = "com.tejus.shavedogmusic.start_progress";
+    public static final String STOP_SEARCH_PROGRESS = "com.tejus.shavedogmusic.stop_progress";
     
     // Intent Names:
     public static String INTENT_SONG_PLAYING = "com.tejus.shavedogmusic.song_name";

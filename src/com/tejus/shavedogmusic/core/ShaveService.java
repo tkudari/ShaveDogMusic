@@ -195,7 +195,6 @@ public class ShaveService extends Service {
         if ( !wifi.isWifiEnabled() ) {
             Toast.makeText( this, R.string.no_wifi, Toast.LENGTH_LONG ).show();
         }
-        dhcp = wifi.getDhcpInfo();
         getOurIp();
         WifiManager wifiManager = ( WifiManager ) this.getSystemService( Context.WIFI_SERVICE );
         wifiLock = wifiManager.createWifiLock( WifiManager.WIFI_MODE_FULL, "MyWifiLock" );
@@ -203,6 +202,7 @@ public class ShaveService extends Service {
     }
 
     private InetAddress getOurIp() {
+        dhcp = wifi.getDhcpInfo();
         Definitions.IP_ADDRESS_INT = dhcp.ipAddress;
         int ourIp = Definitions.IP_ADDRESS_INT;
         byte[] quads = new byte[ 4 ];
@@ -226,6 +226,16 @@ public class ShaveService extends Service {
         @Override
         protected void onProgressUpdate( DatagramPacket... packet ) {
             dealWithReceivedPacketNew( packet[ 0 ] );
+        }
+
+        @Override
+        protected void onPreExecute() {
+            startSearchProgressDialog();
+        }
+
+        @Override
+        protected void onPostExecute( Void result ) {
+            // stopSearchProgressDialog();
         }
 
         @Override
@@ -259,13 +269,14 @@ public class ShaveService extends Service {
                     Message showToast = new Message();
                     showToast.setData( bundle );
                     messageHandler.sendMessage( showToast );
+                    e.printStackTrace();
 
                 } catch ( Exception e ) {
                     e.printStackTrace();
                 }
             }
 
-            // search other subnets under our parent's subnet:
+            // search neighboring subnets:
 
             for ( int j = 0; j < 256; j++ ) {
                 if ( j == ( Integer.parseInt( subnetId ) - 1 ) || j == ( Integer.parseInt( subnetId ) + 1 ) ) {
@@ -457,7 +468,7 @@ public class ShaveService extends Service {
             e.printStackTrace();
         }
         sendMessageNew( senderAddress, message );
-
+        stopSearchProgressDialog();
         Toast toast = Toast.makeText( this, userName + " added!", Toast.LENGTH_SHORT );
         toast.show();
     }
@@ -673,6 +684,10 @@ public class ShaveService extends Service {
         }
 
     }
+    
+    public int getPeerCount() {
+        return peerList.size();
+    }
 
     public int getDownloadPort( String userName ) {
         return downloadPortMap.get( userName );
@@ -727,6 +742,18 @@ public class ShaveService extends Service {
         }
         Logger.d( "gonna start dumping cursor.." );
         DatabaseUtils.dumpCursor( cursor );
+    }
+
+    private void startSearchProgressDialog() {
+        Intent intent = new Intent( Definitions.START_SEARCH_PROGRESS );
+        Logger.d( "ShaveService.startSearchProgressDialog: sending start progress broadcast.." );
+        this.sendBroadcast( intent );
+    }
+
+    private void stopSearchProgressDialog() {
+        Intent intent = new Intent( Definitions.STOP_SEARCH_PROGRESS );
+        Logger.d( "ShaveService.startSearchProgressDialog: sending stop progress broadcast.." );
+        this.sendBroadcast( intent );
     }
 
 }

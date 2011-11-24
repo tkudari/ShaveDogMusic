@@ -28,6 +28,10 @@
     <string name="wifi_on">WiFi is ON </string>
     <string name="wifi_off">WiFi is OFF! </string>
     <string name="reassoc">No friends connected! Hit \'Join Network\' again </string>
+    <string name="searching_peers_title">Please Wait</string>
+    <string name="searching_peers_message">Searching for other ShaveDogs... </string>    
+        
+        
     
     
     

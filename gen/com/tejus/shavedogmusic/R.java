@@ -60,6 +60,8 @@ public final class R {
         public static final int play=0x7f040017;
         public static final int quit=0x7f040011;
         public static final int reassoc=0x7f04001a;
+        public static final int searching_peers_message=0x7f04001c;
+        public static final int searching_peers_title=0x7f04001b;
         public static final int set=0x7f040009;
         public static final int set_creds=0x7f040008;
         public static final int shave_service_disconnected=0x7f040004;
