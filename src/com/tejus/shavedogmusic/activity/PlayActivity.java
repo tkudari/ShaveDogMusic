@@ -3,6 +3,7 @@ package com.tejus.shavedogmusic.activity;
 import com.tejus.shavedogmusic.R;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -16,15 +17,20 @@ import java.io.IOException;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
+import android.content.DialogInterface.OnDismissListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -34,6 +40,7 @@ import com.tejus.shavedogmusic.core.Definitions;
 import com.tejus.shavedogmusic.core.ShaveMediaPlayer;
 import com.tejus.shavedogmusic.core.ShaveService;
 import com.tejus.shavedogmusic.utils.Logger;
+import com.tejus.shavedogmusic.utils.ShaveDialog;
 
 public class PlayActivity extends Activity {
 
@@ -51,7 +58,7 @@ public class PlayActivity extends Activity {
     ServiceConnection mConnection;
     ShaveService mShaveService;
     Context mContext;
-    Handler handler = new Handler();    
+    Handler handler = new Handler();
 
     public void onCreate( Bundle icicle ) {
 
@@ -135,7 +142,7 @@ public class PlayActivity extends Activity {
             public void onClick( View view ) {
                 // if we know of no peers:
                 if ( mShaveService.getPeerCount() == 0 ) {
-                    mShaveService.testPopulateList();                    
+                    mShaveService.testPopulateList();
                 } else {
                     startStreamingAudio();
                 }
@@ -244,8 +251,8 @@ public class PlayActivity extends Activity {
             if ( searchProgressDialog != null && searchProgressDialog.isShowing() ) {
                 searchProgressDialog.dismiss();
                 startStreamingAudio();
-            }            
-            
+            }
+
         }
 
         private void startSearchProgressDialog() {
@@ -269,6 +276,10 @@ public class PlayActivity extends Activity {
     }
 
     void setViewValues() {
+
+        if ( mShaveService == null ) {
+            Logger.e( "YEs, is null" );
+        }
         ConnectivityManager connManager = ( ConnectivityManager ) getSystemService( CONNECTIVITY_SERVICE );
         NetworkInfo netInfo = connManager.getNetworkInfo( ConnectivityManager.TYPE_WIFI );
 
@@ -278,6 +289,13 @@ public class PlayActivity extends Activity {
         } else {
             Logger.d( "setViewValues: wifi is off" );
             wifiState.setText( getResources().getString( R.string.wifi_off ) );
+        }
+
+        // userName.exists? nothing : get one
+        SharedPreferences settings = getSharedPreferences( Definitions.credsPrefFile, Context.MODE_PRIVATE );
+        if ( settings.getString( Definitions.prefUserName, "" ).length() < 3 ) {
+            ShaveDialog dialog = new ShaveDialog( this, getResources().getString( R.string.user_name_dialog_title ), getResources().getString(
+                    R.string.user_name_dialog_message ), getResources().getString( R.string.ok ) );
         }
     }
 
@@ -310,8 +328,8 @@ public class PlayActivity extends Activity {
     protected void onResume() {
         super.onResume();
         initReceiver();
-        setViewValues();
         initShaveServiceStuff();
+        setViewValues();
     }
 
 }

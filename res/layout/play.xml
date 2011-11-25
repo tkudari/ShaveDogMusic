@@ -77,7 +77,6 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:paddingTop="300dip"
-        android:text="@string/song_name"
         android:textStyle="bold" />
 
     <TextView

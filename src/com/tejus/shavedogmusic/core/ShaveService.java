@@ -322,7 +322,7 @@ public class ShaveService extends Service {
         }
     }
 
-    private String getOurUserName() {
+    public String getOurUserName() {
         SharedPreferences settings = getSharedPreferences( Definitions.credsPrefFile, Context.MODE_PRIVATE );
         return settings.getString( Definitions.prefUserName, Definitions.defaultUserName );
     }

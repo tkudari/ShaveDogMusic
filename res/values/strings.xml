@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string name="hello">Hello World, ShaveDogMusicActivity!</string>
     <string name="app_name">ShaveDog</string>
     <string name="shave_service_started">ShaveDogMusic Service running!</string>
@@ -12,28 +13,26 @@
     <string name="set">Set</string>
     <string name="back">Back</string>
     <string name="username">UserName: </string>
+    <string name="set_username">Please enter a User Name!</string>
     <string name="username_too_small">Minimum username length should be = </string>
     <string name="placeholder">Hit Play to Start things off! </string>
     <string name="dump_maps">Dump maps to logs </string>
     <string name="cannot_serve">Cannot serve user: </string>
     <string name="test_api">Test API</string>
     <string name="quit">Quit!</string>
-	<string name="song_name">Waiting for track..</string>    
-	<string name="now_playing">Now playing: </string>
-	<string name="artist_name">Artist:  </string>
-	<string name="from_peer">From User:  </string>
-	
+    <string name="song_name">Waiting for track..</string>
+    <string name="now_playing">Now playing: </string>
+    <string name="artist_name">Artist:  </string>
+    <string name="from_peer">From User:  </string>
     <string name="next">Next > </string>
     <string name="play">Play > </string>
     <string name="wifi_on">WiFi is ON </string>
     <string name="wifi_off">WiFi is OFF! </string>
     <string name="reassoc">No friends connected! Hit \'Join Network\' again </string>
     <string name="searching_peers_title">Please Wait</string>
-    <string name="searching_peers_message">Searching for other ShaveDogs... </string>    
-        
-        
-    
-    
-    
-    
+    <string name="searching_peers_message">Searching for other ShaveDogs... </string>
+    <string name="user_name_dialog_title">Your ShaveDog says </string>
+    <string name="user_name_dialog_message">Please enter a name you wish to be known by </string>
+    <string name="ok">OK </string>
+
 </resources>
