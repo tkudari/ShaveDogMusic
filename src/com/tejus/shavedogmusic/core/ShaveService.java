@@ -78,6 +78,8 @@ public class ShaveService extends Service {
     // each peer is assigned exactly ONE uploader:
     private static HashMap<String, Uploader> peerUploaderMap = new HashMap<String, Uploader>();
 
+    private static HashMap<String, HashMap<String, Long>> dupePacketResolver = new HashMap<String, HashMap<String, Long>>();
+
     LocalMusicManager localMusicManager;
 
     public class ShaveBinder extends Binder {
@@ -415,6 +417,7 @@ public class ShaveService extends Service {
             String senderAddress = jsonReceived.getString( Definitions.SENDER_ADDRESS );
             String senderUserName = jsonReceived.getString( Definitions.SENDER_UNAME );
             Logger.d( "ShaveService.dealWithReceivedPacket: Message type received = " + messageType );
+            long timeReceived = System.currentTimeMillis();
 
             if ( messageType.equals( Definitions.DISCOVER_PING ) ) {
                 if ( senderAddress.equals( cleanThisStringUp( Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
@@ -432,9 +435,24 @@ public class ShaveService extends Service {
                 playAckReceived( jsonReceived.getString( "song_artist" ), jsonReceived.getString( "song_title" ), senderUserName,
                         jsonReceived.getString( "song_duration" ) );
             }
+            notePacketForDupes( senderUserName, messageType, timeReceived );
+           
         } catch ( JSONException e ) {
             e.printStackTrace();
         }
+    }
+
+    private void notePacketForDupes( String senderUserName, String messageType, long timeReceived ) {
+        HashMap<String, Long> packetHistoryMap = dupePacketResolver.get( senderUserName );
+        if ( packetHistoryMap != null ) {
+            packetHistoryMap.put( messageType, timeReceived );
+            dupePacketResolver.put( senderUserName, packetHistoryMap );
+        } else {
+            HashMap<String, Long> item = new HashMap<String, Long>();
+            item.put( messageType, timeReceived );
+            dupePacketResolver.put( senderUserName, item );
+        }
+
     }
 
     private void playAckReceived( String artistName, String songName, String userName, String songDuration ) {
@@ -684,7 +702,7 @@ public class ShaveService extends Service {
         }
 
     }
-    
+
     public int getPeerCount() {
         return peerList.size();
     }

@@ -59,6 +59,7 @@ public class PlayActivity extends Activity {
     ShaveService mShaveService;
     Context mContext;
     Handler handler = new Handler();
+    boolean thisIsTheFirstPlayAck = true;
 
     public void onCreate( Bundle icicle ) {
 
@@ -69,7 +70,17 @@ public class PlayActivity extends Activity {
         initReceiver();
         initShaveServiceStuff();
         setViewValues();
+        checkUserName();
 
+    }
+
+    private void checkUserName() {
+        // userName.exists? nothing : get one
+        SharedPreferences settings = getSharedPreferences( Definitions.credsPrefFile, Context.MODE_PRIVATE );
+        if ( settings.getString( Definitions.prefUserName, "" ).length() < 3 ) {
+            ShaveDialog dialog = new ShaveDialog( this, getResources().getString( R.string.user_name_dialog_title ), getResources().getString(
+                    R.string.user_name_dialog_message ), getResources().getString( R.string.ok ) );
+        }
     }
 
     @Override
@@ -140,12 +151,8 @@ public class PlayActivity extends Activity {
         } );
         streamButton.setOnClickListener( new View.OnClickListener() {
             public void onClick( View view ) {
-                // if we know of no peers:
-                if ( mShaveService.getPeerCount() == 0 ) {
-                    mShaveService.testPopulateList();
-                } else {
-                    startStreamingAudio();
-                }
+                mShaveService.testPopulateList();
+
                 streamButton.setVisibility( View.GONE );
                 nextButton.setVisibility( View.VISIBLE );
             }
@@ -250,7 +257,11 @@ public class PlayActivity extends Activity {
         private void stopSearchProgressDialog() {
             if ( searchProgressDialog != null && searchProgressDialog.isShowing() ) {
                 searchProgressDialog.dismiss();
-                startStreamingAudio();
+                // we got a DISCOVER_ACK, so start playing:
+                if ( thisIsTheFirstPlayAck ) {
+                    startStreamingAudio();
+                    thisIsTheFirstPlayAck = false;
+                }
             }
 
         }
@@ -291,12 +302,6 @@ public class PlayActivity extends Activity {
             wifiState.setText( getResources().getString( R.string.wifi_off ) );
         }
 
-        // userName.exists? nothing : get one
-        SharedPreferences settings = getSharedPreferences( Definitions.credsPrefFile, Context.MODE_PRIVATE );
-        if ( settings.getString( Definitions.prefUserName, "" ).length() < 3 ) {
-            ShaveDialog dialog = new ShaveDialog( this, getResources().getString( R.string.user_name_dialog_title ), getResources().getString(
-                    R.string.user_name_dialog_message ), getResources().getString( R.string.ok ) );
-        }
     }
 
     @Override

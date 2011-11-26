@@ -15,20 +15,21 @@ import android.widget.Toast;
 public class ShaveDialog implements OnDismissListener, OnCancelListener {
     final private EditText editText;
     final private AlertDialog alertDialog;
-    final private String positiveButtonText, title, message;
+    private String positiveButtonText, title, message;
     Context mContext;
 
     private Boolean canceled;
 
     public ShaveDialog( Context context, String title, String message, String positiveButtonText ) {
         mContext = context;
+        this.title = title;
+        this.message = message;
+        this.positiveButtonText = positiveButtonText;
         editText = new EditText( context );
         alertDialog = buildAlertDialog( context );
         alertDialog.setOnDismissListener( this );
         alertDialog.setOnCancelListener( this );
-        this.title = title;
-        this.message = message;
-        this.positiveButtonText = positiveButtonText;
+        Logger.d( "message = " + message + ", title = " + title );
         show();
     }
 
@@ -54,13 +55,13 @@ public class ShaveDialog implements OnDismissListener, OnCancelListener {
                 Toast toast = Toast.makeText( mContext, toastText, Toast.LENGTH_SHORT );
                 toast.show();
                 show();
-                
+
             } else {
                 SharedPreferences settings = mContext.getSharedPreferences( Definitions.credsPrefFile, Context.MODE_PRIVATE );
                 SharedPreferences.Editor editor = settings.edit();
                 editor.putString( Definitions.prefUserName, userName );
                 editor.commit();
-
+                alertDialog.cancel();
             }
         }
     }
