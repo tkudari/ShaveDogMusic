@@ -50,6 +50,7 @@ public class Definitions {
     public static final String PLAY_ACK = "play_ack";
     
     public static final int TRANSACTION_PORT_START = 10000;
+    public static final int PACKET_DUPE_THRESHOLD_TIME = 1000;
     public static final boolean IS_IN_DEBUG_MODE = true;
     public static final String WIFI_STATE_CHANGE = "wifi_state_change";
     public static final String SERVED_ALL_SONGS = "served_all_songs";

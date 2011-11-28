@@ -10,8 +10,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.StringTokenizer;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -29,7 +27,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
-import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
@@ -50,6 +47,7 @@ public class ShaveService extends Service {
             String messageValue = msg.getData().getString( "message_value" );
             if ( messageType != null && messageValue != null ) {
                 if ( messageType.equals( "show_toast" ) ) {
+                    //TODO:clean this up:
                     Logger.d( "ShaveService.handleMessage: gonna show toast as: " + messageValue );
                     Toast.makeText( ShaveService.this, messageValue, Toast.LENGTH_SHORT );
                 }
@@ -334,80 +332,7 @@ public class ShaveService extends Service {
         mFinder.execute();
     }
 
-    // Request processor:
-    // private void dealWithReceivedPacket( DatagramPacket packet ) {
-    //
-    // String words[] = new String[ Definitions.COMMAND_WORD_LENGTH + 1 ];
-    // int wordCounter = 0;
-    // String senderAddress, userName;
-    // String command = new String( packet.getData() );
-    // Logger.d( "command here = " + command );
-    //
-    // StringTokenizer strTok = new StringTokenizer( command,
-    // Definitions.COMMAND_DELIM );
-    // while ( strTok.hasMoreTokens() && wordCounter <=
-    // Definitions.COMMAND_WORD_LENGTH ) {
-    // words[ wordCounter ] = strTok.nextToken();
-    // Logger.d( "word here = " + words[ wordCounter ] );
-    // ++wordCounter;
-    // }
-    // for ( String word : words )
-    // Logger.d( "word = " + word );
-    //
-    // userName = words[ 1 ];
-    // senderAddress = words[ 2 ];
-    //
-    // if ( words[ 0 ].equals( Definitions.DISCOVER_PING ) ) {
-    // Logger.d( "DISCOVER_PING received...." );
-    // Logger.d( "cleanedup = " + cleanThisStringUp( words[ 2 ] ) );
-    // if ( cleanThisStringUp( words[ 2 ] ).equals( cleanThisStringUp(
-    // Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
-    // Logger.d( "yep, it's ours" );
-    // } else {
-    // discoverPingReceived( new String[] {
-    // words[ 1 ],
-    // cleanThisStringUp( words[ 2 ] )
-    // } );
-    // }
-    // }
-    //
-    // if ( words[ 0 ].equals( Definitions.DISCOVER_ACK ) ) {
-    // Logger.d( "DISCOVER_ACK received...." );
-    // Logger.d( "cleanedup DISCOVER_ACK = " + cleanThisStringUp( words[ 2 ] )
-    // );
-    //
-    // discoverAckReceived( new String[] {
-    // words[ 1 ],
-    // cleanThisStringUp( words[ 2 ] ),
-    // words[ 3 ]
-    // } );
-    // }
-    //
-    // if ( words[ 0 ].equals( Definitions.DISCOVER_ACK2 ) ) {
-    // Logger.d( "DISCOVER_ACK2 received...." );
-    // Logger.d( "cleanedup DISCOVER_ACK2 = " + cleanThisStringUp( words[ 2 ] )
-    // );
-    //
-    // discoverAck2Received( new String[] {
-    // words[ 1 ],
-    // cleanThisStringUp( words[ 2 ] ),
-    // words[ 3 ]
-    // } );
-    // }
-    //
-    // if ( words[ 0 ].equals( Definitions.PLAY_REQUEST ) ) {
-    // Logger.d( "PLAY_REQUEST received from : " + userName );
-    // playRequestReceived( userName, senderAddress );
-    //
-    // }
-    //
-    // if ( words[ 0 ].equals( Definitions.PLAY_ACK ) ) {
-    // Logger.d( "PLAY_ACK received from : " + words[ 3 ] + "; songName = " +
-    // words[ 1 ] + "; artist = " + words[ 2 ] );
-    // playAckReceived( words[ 2 ], words[ 1 ], words[ 3 ] );
-    // }
-    //
-    // }
+    
 
     private void dealWithReceivedPacketNew( DatagramPacket packet ) {
         try {
@@ -418,39 +343,64 @@ public class ShaveService extends Service {
             String senderUserName = jsonReceived.getString( Definitions.SENDER_UNAME );
             Logger.d( "ShaveService.dealWithReceivedPacket: Message type received = " + messageType );
             long timeReceived = System.currentTimeMillis();
-
-            if ( messageType.equals( Definitions.DISCOVER_PING ) ) {
-                if ( senderAddress.equals( cleanThisStringUp( Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
-                    Logger.d( "ShaveService.dealWithReceivedPacket: DISCOVER_PING is our own, ignoring.." );
-                } else {
-                    discoverPingReceived( senderUserName, jsonReceived.getString( Definitions.SENDER_ADDRESS ) );
+            if ( isNotADupePacket( senderUserName, messageType, timeReceived ) ) {
+                if ( messageType.equals( Definitions.DISCOVER_PING ) ) {
+                    if ( senderAddress.equals( cleanThisStringUp( Definitions.IP_ADDRESS_INETADDRESS.getHostAddress() ) ) ) {
+                        Logger.d( "ShaveService.dealWithReceivedPacket: DISCOVER_PING is our own, ignoring.." );
+                    } else {
+                        discoverPingReceived( senderUserName, jsonReceived.getString( Definitions.SENDER_ADDRESS ) );
+                    }
+                } else if ( messageType.equals( Definitions.DISCOVER_ACK ) ) {
+                    discoverAckReceived( jsonReceived.getString( "upload_port" ), senderUserName, senderAddress );
+                } else if ( messageType.equals( Definitions.DISCOVER_ACK2 ) ) {
+                    discoverAck2Received( jsonReceived.getString( "upload_port" ), senderUserName, senderAddress );
+                } else if ( messageType.equals( Definitions.PLAY_REQUEST ) ) {
+                    playRequestReceived( senderUserName, senderAddress );
+                } else if ( messageType.equals( Definitions.PLAY_ACK ) ) {
+                    playAckReceived( jsonReceived.getString( "song_artist" ), jsonReceived.getString( "song_title" ), senderUserName,
+                            jsonReceived.getString( "song_duration" ) );
                 }
-            } else if ( messageType.equals( Definitions.DISCOVER_ACK ) ) {
-                discoverAckReceived( jsonReceived.getString( "upload_port" ), senderUserName, senderAddress );
-            } else if ( messageType.equals( Definitions.DISCOVER_ACK2 ) ) {
-                discoverAck2Received( jsonReceived.getString( "upload_port" ), senderUserName, senderAddress );
-            } else if ( messageType.equals( Definitions.PLAY_REQUEST ) ) {
-                playRequestReceived( senderUserName, senderAddress );
-            } else if ( messageType.equals( Definitions.PLAY_ACK ) ) {
-                playAckReceived( jsonReceived.getString( "song_artist" ), jsonReceived.getString( "song_title" ), senderUserName,
-                        jsonReceived.getString( "song_duration" ) );
             }
-            notePacketForDupes( senderUserName, messageType, timeReceived );
-           
+
         } catch ( JSONException e ) {
             e.printStackTrace();
         }
     }
 
-    private void notePacketForDupes( String senderUserName, String messageType, long timeReceived ) {
+    private boolean isNotADupePacket( String senderUserName, String messageType, long timeReceived ) {
         HashMap<String, Long> packetHistoryMap = dupePacketResolver.get( senderUserName );
+        // we have a packet from this user before:
         if ( packetHistoryMap != null ) {
-            packetHistoryMap.put( messageType, timeReceived );
-            dupePacketResolver.put( senderUserName, packetHistoryMap );
+            if ( packetHistoryMap.get( messageType ) != null ) {
+                // we have a similar message before:
+                long previousPacketTime = packetHistoryMap.get( messageType );
+                if ( timeReceived - previousPacketTime < Definitions.PACKET_DUPE_THRESHOLD_TIME ) {
+                    // this was received before the threshold time:
+                    Logger.d( "ShaveService.isNotADupePacket: dupe packet received.. " + senderUserName + ": " + messageType + ": " + timeReceived );
+                    return false;
+                } else {
+                    // this is a valid packet, replace previous entry:
+                    packetHistoryMap.put( messageType, timeReceived );
+                    dupePacketResolver.put( senderUserName, packetHistoryMap );
+                    Logger.d( "ShaveService.isNotADupePacket: replacing previous entry..  dupePacketResolver: " + dupePacketResolver.toString() );
+                    return true;
+                }
+
+            } else {
+                // We have no history for this messageType:
+                packetHistoryMap.put( messageType, timeReceived );
+                dupePacketResolver.put( senderUserName, packetHistoryMap );
+                Logger.d( "ShaveService.isNotADupePacket: creating history for this messageType..  dupePacketResolver: " + dupePacketResolver.toString() );
+                return true;
+            }
         } else {
+            // We have no packets at all from this user. so create a new entry
+            // for this user:
             HashMap<String, Long> item = new HashMap<String, Long>();
             item.put( messageType, timeReceived );
             dupePacketResolver.put( senderUserName, item );
+            Logger.d( "ShaveService.isNotADupePacket: creating history for this sender..  dupePacketResolver: " + dupePacketResolver.toString() );
+            return true;
         }
 
     }
