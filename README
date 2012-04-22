@@ -1,4 +1,4 @@
-This is a distributed (music) radio station for Android. 
+This is a simple distributed (music) radio station for Android. 
 
 Here's how to use it:
 
@@ -14,3 +14,5 @@ Here's how to use it:
 - The speed of streaming is dependent on the LAN speed (intranet).
 - Multi-hop mesh networks are also supported, in that the devices need not be on the same subnet.
 - However, in this version of the app, they can only be at a maximum of 1 subnet away, i.e, devices should be on the same or adjacent subnets.
+- Music is played as soon as soon as a minimum buffer's worth of data is streamed from a peer, and is updated everytime 3 seconds worth of playback is streamed.
+- Each song is buffered only till it is played, and is then erased on the consuming device.
